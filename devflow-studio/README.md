@@ -52,15 +52,6 @@ AI-powered Azure DevOps dashboard with smart standup generation and personal jou
 
 3. **Open Dashboard**: Press **Ctrl+Alt+A** (Cmd+Alt+A on Mac)
 
-## 📚 Documentation
-
-For detailed guides and advanced configuration, see the [ProjectKnowledgeDocs](./ProjectKnowledgeDocs/) folder:
-
-- **[START-HERE.md](./ProjectKnowledgeDocs/START-HERE.md)** - Comprehensive quick start guide
-- **[DOCUMENTATION-INDEX.md](./ProjectKnowledgeDocs/DOCUMENTATION-INDEX.md)** - Complete documentation index
-- **[ARCHITECTURE.md](./ProjectKnowledgeDocs/ARCHITECTURE.md)** - Technical architecture details
-- **[CONFIGURATION-TEMPLATES.md](./ProjectKnowledgeDocs/CONFIGURATION-TEMPLATES.md)** - Configuration examples
-
 ## 🤝 Contributing
 
 Contributions welcome! Please fork the repository, create a feature branch, and submit a pull request.
