@@ -62,8 +62,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/SantanSharma/devflow-studio)
-- [Issues & Bug Reports](https://github.com/SantanSharma/devflow-studio/issues)
+- [GitHub Repository](https://github.com/SantanSharma/DevFlow-Studio)
+- [Issues & Bug Reports](https://github.com/SantanSharma/DevFlow-Studio/issues)
 - [Documentation](./ProjectKnowledgeDocs/)
 
 ---

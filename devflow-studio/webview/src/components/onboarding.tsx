@@ -162,7 +162,7 @@ export const Onboarding: React.FC<{ onDone: () => void }> = ({ onDone }) => {
               </p>
             </div>
             <p style={{ marginTop: '1.5rem' }}>
-              Visit us at: <a href="https://github.com/SantanSharma/devflow-studio" style={{ color: '#0078d4' }}>github.com/SantanSharma/devflow-studio</a>
+              Visit us at: <a href="https://github.com/SantanSharma/DevFlow-Studio" style={{ color: '#0078d4' }}>github.com/SantanSharma/DevFlow-Studio</a>
             </p>
             <div className="onboarding-actions">
               <button className="secondary" onClick={() => setStep(2)}>

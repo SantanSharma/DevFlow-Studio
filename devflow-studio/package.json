@@ -24,12 +24,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SantanSharma/devflow-studio.git"
+    "url": "https://github.com/SantanSharma/DevFlow-Studio.git"
   },
   "bugs": {
-    "url": "https://github.com/SantanSharma/devflow-studio/issues"
+    "url": "https://github.com/SantanSharma/DevFlow-Studio/issues"
   },
-  "homepage": "https://github.com/SantanSharma/devflow-studio#readme",
+  "homepage": "https://github.com/SantanSharma/DevFlow-Studio#readme",
   "engines": {
     "vscode": "^1.95.0"
   },
