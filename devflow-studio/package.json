@@ -1,0 +1,192 @@
+{
+  "name": "devflow-studio",
+  "displayName": "DevFlow Studio",
+  "description": "AI-powered Azure DevOps dashboard with smart standup generation and personal journal",
+  "version": "0.1.0",
+  "publisher": "SantanSharma",
+  "license": "MIT",
+  "categories": [
+    "Other",
+    "AI"
+  ],
+  "keywords": [
+    "azure devops",
+    "ado",
+    "standup",
+    "mcp",
+    "claude",
+    "work items"
+  ],
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0078d4",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SantanSharma/devflow-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SantanSharma/devflow-studio/issues"
+  },
+  "homepage": "https://github.com/SantanSharma/devflow-studio#readme",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "devflowStudio.open",
+        "title": "DevFlow Studio: Open",
+        "category": "DevFlow Studio"
+      },
+      {
+        "command": "devflowStudio.refresh",
+        "title": "DevFlow Studio: Refresh",
+        "category": "DevFlow Studio"
+      },
+      {
+        "command": "devflowStudio.generateStandup",
+        "title": "DevFlow Studio: Generate Standup",
+        "category": "DevFlow Studio"
+      },
+      {
+        "command": "devflowStudio.resetOnboarding",
+        "title": "DevFlow Studio: Reset Onboarding",
+        "category": "DevFlow Studio"
+      }
+    ],
+    "configuration": {
+      "title": "DevFlow Studio",
+      "properties": {
+        "devflowStudio.adoMcpServerId": {
+          "type": "string",
+          "scope": "application",
+          "default": "ado",
+          "description": "Id of the MCP server (from mcp.json or custom adds) that exposes Azure DevOps tools (wit_*, repo_*)."
+        },
+        "devflowStudio.adoProject": {
+          "type": "string",
+          "scope": "application",
+          "default": "",
+          "description": "Default Azure DevOps project name used for work item batch fetches."
+        },
+        "devflowStudio.pollIntervalSeconds": {
+          "type": "number",
+          "scope": "application",
+          "default": 300,
+          "minimum": 30,
+          "description": "How often to refresh assigned work items in the background. Set to 0 to disable."
+        },
+        "devflowStudio.standupWindowHours": {
+          "type": "number",
+          "scope": "application",
+          "default": 24,
+          "minimum": 1,
+          "description": "How far back to look when collecting standup signals."
+        },
+        "devflowStudio.extraAssigneeFields": {
+          "type": "array",
+          "scope": "application",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Additional identity field refnames (e.g. custom 'Dev' role fields) to include when querying your work items. Items where you appear in any of these fields will be fetched, in addition to System.AssignedTo. Find the refname via the work item REST API."
+        },
+        "devflowStudio.meEmail": {
+          "type": "string",
+          "scope": "application",
+          "default": "",
+          "description": "Your Azure DevOps unique name (email). Used in WIQL queries instead of @Me to avoid identity-resolution issues when the spawned MCP server runs under a different account. Example: user@example.com"
+        },
+        "devflowStudio.meDisplayName": {
+          "type": "string",
+          "scope": "application",
+          "default": "",
+          "description": "Your Azure DevOps display name. Combined with meEmail as 'Display Name <email>' in WIQL identity literals (the format ADO usually requires)."
+        },
+        "devflowStudio.savedQueryId": {
+          "type": "string",
+          "scope": "application",
+          "default": "",
+          "description": "Optional saved ADO query ID (GUID) or path (e.g. 'My Queries/SS-WorkItems'). When set, the dashboard uses this query as the single source of truth for assigned work items, executing it fresh on every refresh. All dashboard views filter this result set client-side."
+        },
+        "devflowStudio.storyPointsFields": {
+          "type": "array",
+          "scope": "application",
+          "items": { "type": "string" },
+          "default": [
+            "Microsoft.VSTS.Scheduling.StoryPoints",
+            "Microsoft.VSTS.Scheduling.Effort"
+          ],
+          "description": "Field refnames to read story points / effort from. First non-empty value wins per work item."
+        },
+        "devflowStudio.customMcpServers": {
+          "type": "array",
+          "scope": "application",
+          "default": [],
+          "description": "Custom MCP servers added via the Settings page. Stored as { id, command, args, env }.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "command"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "devflowStudio.open",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run build:webview && npm run build:ext",
+    "build:ext": "node esbuild.js --production",
+    "build:webview": "npm --prefix webview run build",
+    "watch": "node esbuild.js --watch",
+    "watch:webview": "npm --prefix webview run dev",
+    "package": "vsce package --no-yarn --no-dependencies",
+    "lint": "eslint src --ext ts",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.9.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  }
+}
