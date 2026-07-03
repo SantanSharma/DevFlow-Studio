@@ -52,6 +52,15 @@ AI-powered Azure DevOps dashboard with smart standup generation and personal jou
 
 3. **Open Dashboard**: Press **Ctrl+Alt+A** (Cmd+Alt+A on Mac)
 
+## 📚 Documentation
+
+For detailed guides and advanced configuration, see the [ProjectKnowledgeDocs](./ProjectKnowledgeDocs/) folder:
+
+- **[START-HERE.md](./ProjectKnowledgeDocs/START-HERE.md)** - Comprehensive quick start guide
+- **[DOCUMENTATION-INDEX.md](./ProjectKnowledgeDocs/DOCUMENTATION-INDEX.md)** - Complete documentation index
+- **[ARCHITECTURE.md](./ProjectKnowledgeDocs/ARCHITECTURE.md)** - Technical architecture details
+- **[CONFIGURATION-TEMPLATES.md](./ProjectKnowledgeDocs/CONFIGURATION-TEMPLATES.md)** - Configuration examples
+
 ## 🤝 Contributing
 
 Contributions welcome! Please fork the repository, create a feature branch, and submit a pull request.
@@ -60,12 +69,23 @@ Contributions welcome! Please fork the repository, create a feature branch, and 
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## 🔗 Links
+---
 
-- [GitHub Repository](https://github.com/SantanSharma/DevFlow-Studio)
-- [Issues & Bug Reports](https://github.com/SantanSharma/DevFlow-Studio/issues)
-- [Documentation](./ProjectKnowledgeDocs/)
+## 👤 Author
+
+**Santan Sharma**
+
+- GitHub: [@SantanSharma](https://github.com/SantanSharma)
+- Email: [pingsantan@gmail.com](mailto:pingsantan@gmail.com)
+
+## ⭐ Support
+
+If you find DevFlow Studio helpful, please:
+
+- ⭐ **Star the repository** on [GitHub](https://github.com/SantanSharma/DevFlow-Studio)
+- 📝 **Leave a review** on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SantanSharma.devflow-studio)
+- 🐛 **Report issues** on [GitHub Issues](https://github.com/SantanSharma/DevFlow-Studio/issues)
 
 ---
 
-**Created by Santan Sharma** | [pingsantan@gmail.com](mailto:pingsantan@gmail.com)
+<p align="center">Made with ❤️ by Santan Sharma</p>
