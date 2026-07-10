@@ -11,21 +11,32 @@ export class LmClient {
     handler: LmStreamHandler,
     token?: vscode.CancellationToken,
   ): Promise<string> {
-    const model = await this._pickModel();
-    if (!model) {
-      throw new Error(
-        "No Claude language model is available via VS Code. Sign in to Copilot and ensure a Claude model is enabled.",
+    try {
+      const model = await this._pickModel();
+      if (!model) {
+        logger.warn("No language model available for generation");
+        throw new Error(
+          "No language model is available. Please ensure GitHub Copilot is enabled.",
+        );
+      }
+
+      logger.info(
+        `Using model: ${model.vendor}/${model.family} (${model.name})`,
       );
+      const messages = [vscode.LanguageModelChatMessage.User(prompt)];
+      const ct = token ?? new vscode.CancellationTokenSource().token;
+      const response = await model.sendRequest(messages, {}, ct);
+      let full = "";
+      for await (const chunk of response.text) {
+        full += chunk;
+        handler.onToken(chunk);
+      }
+      logger.info(`Generated ${full.length} characters`);
+      return full;
+    } catch (e) {
+      logger.error("LmClient.generate failed", e);
+      throw e;
     }
-    const messages = [vscode.LanguageModelChatMessage.User(prompt)];
-    const ct = token ?? new vscode.CancellationTokenSource().token;
-    const response = await model.sendRequest(messages, {}, ct);
-    let full = "";
-    for await (const chunk of response.text) {
-      full += chunk;
-      handler.onToken(chunk);
-    }
-    return full;
   }
 
   private async _pickModel(): Promise<vscode.LanguageModelChat | undefined> {

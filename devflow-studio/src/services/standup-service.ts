@@ -13,10 +13,21 @@ const ACTIVE_STATES = new Set([
   "To Do",
 ]);
 const BLOCKED_STATES = new Set(["Redbin/Blocked", "Blocked", "On Hold"]);
+const STANDUP_HISTORY_KEY = "devflowStudio.standupHistory";
+const MAX_HISTORY_ITEMS = 10;
 
 export interface StandupProgress {
   onStage: (stage: string) => void;
   onToken: (text: string) => void;
+}
+
+export interface StandupHistoryEntry {
+  date: string;
+  timeWindow: string;
+  preview: string;
+  workItemCount: number;
+  blockerCount: number;
+  fullText: string;
 }
 
 export class StandupService {
@@ -24,6 +35,7 @@ export class StandupService {
     private readonly _ado: AdoService,
     private readonly _lm: LmClient,
     private readonly _notes: NotesService,
+    private readonly _context: vscode.ExtensionContext,
   ) {}
 
   public async generate(
@@ -102,6 +114,14 @@ export class StandupService {
       token,
     );
 
+    // Auto-save to history
+    await this._saveStandup({
+      markdown,
+      windowHours,
+      workItemCount: recentIds.length,
+      blockerCount: blocked.length,
+    });
+
     return { markdown, context };
   }
 
@@ -136,6 +156,75 @@ export class StandupService {
       }
     }
     return best;
+  }
+
+  public getHistory(): StandupHistoryEntry[] {
+    const history = this._context.globalState.get<StandupHistoryEntry[]>(
+      STANDUP_HISTORY_KEY,
+      [],
+    );
+    return history;
+  }
+
+  public getCurrentStandup(): StandupHistoryEntry | null {
+    const history = this.getHistory();
+    return history.length > 0 ? history[0] : null;
+  }
+
+  public async deleteStandup(index: number): Promise<void> {
+    const history = this.getHistory();
+    if (index >= 0 && index < history.length) {
+      history.splice(index, 1);
+      await this._context.globalState.update(STANDUP_HISTORY_KEY, history);
+    }
+  }
+
+  private async _saveStandup(data: {
+    markdown: string;
+    windowHours: number;
+    workItemCount: number;
+    blockerCount: number;
+  }): Promise<void> {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeWindow =
+      data.windowHours === 24
+        ? "Last 24 hours"
+        : data.windowHours === 48
+          ? "Last 48 hours"
+          : `Last ${data.windowHours} hours`;
+
+    // Extract first 2-3 lines as preview (skip header)
+    const lines = data.markdown.split("\n").filter((l) => l.trim());
+    const contentLines = lines.filter(
+      (l) => !l.startsWith("#") && !l.startsWith("---"),
+    );
+    const preview = contentLines.slice(0, 2).join(" ").substring(0, 150);
+
+    const entry: StandupHistoryEntry = {
+      date: `${dateStr} - ${timeWindow}`,
+      timeWindow,
+      preview: preview || "(empty standup)",
+      workItemCount: data.workItemCount,
+      blockerCount: data.blockerCount,
+      fullText: data.markdown,
+    };
+
+    // Get existing history
+    const history = this.getHistory();
+
+    // Add new entry at the beginning
+    history.unshift(entry);
+
+    // Keep only last MAX_HISTORY_ITEMS
+    const trimmed = history.slice(0, MAX_HISTORY_ITEMS);
+
+    // Save back to global state
+    await this._context.globalState.update(STANDUP_HISTORY_KEY, trimmed);
   }
 
   private async _guessMe(): Promise<string> {

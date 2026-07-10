@@ -44,6 +44,7 @@ const BATCH_FIELDS = [
   "System.Tags",
   "System.ChangedDate",
   "System.CreatedDate",
+  "Microsoft.VSTS.Common.ClosedDate",
   "Microsoft.VSTS.Common.Priority",
   "System.Parent",
 ];
@@ -671,6 +672,7 @@ export class AdoService {
           : [],
         changedDate: f["System.ChangedDate"],
         createdDate: f["System.CreatedDate"],
+        closedDate: f["Microsoft.VSTS.Common.ClosedDate"],
         parentId: f["System.Parent"],
         url: w.url,
       };

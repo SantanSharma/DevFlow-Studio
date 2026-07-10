@@ -6,6 +6,7 @@ import type { AdoService } from "./services/ado-service";
 import type { StandupService } from "./services/standup-service";
 import type { NotesService } from "./services/notes-service";
 import type { WorkedService } from "./services/worked-service";
+import type { DashboardService } from "./services/dashboard-service";
 import { RpcBridge } from "./rpc/bridge";
 
 export class DashboardPanel {
@@ -21,6 +22,7 @@ export class DashboardPanel {
     standup: StandupService,
     notes: NotesService,
     worked: WorkedService,
+    dashboard: DashboardService,
   ): DashboardPanel {
     if (DashboardPanel.current) {
       DashboardPanel.current._panel.reveal();
@@ -46,6 +48,7 @@ export class DashboardPanel {
       standup,
       notes,
       worked,
+      dashboard,
     );
     return DashboardPanel.current;
   }
@@ -58,6 +61,7 @@ export class DashboardPanel {
     standup: StandupService,
     notes: NotesService,
     worked: WorkedService,
+    dashboard: DashboardService,
   ) {
     this._panel = panel;
     this._panel.webview.html = this._buildHtml();
@@ -68,6 +72,7 @@ export class DashboardPanel {
       standup,
       notes,
       worked,
+      dashboard,
       _context,
     );
 

@@ -5,6 +5,7 @@ import { LmClient } from "./services/lm-client";
 import { StandupService } from "./services/standup-service";
 import { NotesService } from "./services/notes-service";
 import { WorkedService } from "./services/worked-service";
+import { DashboardService } from "./services/dashboard-service";
 import { DashboardPanel } from "./panel";
 import { logger } from "./util/logger";
 
@@ -13,6 +14,7 @@ let _ado: AdoService;
 let _standup: StandupService;
 let _notes: NotesService;
 let _worked: WorkedService;
+let _dashboard: DashboardService;
 let _statusBar: vscode.StatusBarItem;
 let _pollTimer: NodeJS.Timeout | undefined;
 
@@ -25,7 +27,8 @@ export async function activate(
   const lm = new LmClient();
   _notes = new NotesService(context);
   _worked = new WorkedService(context);
-  _standup = new StandupService(_ado, lm, _notes);
+  _standup = new StandupService(_ado, lm, _notes, context);
+  _dashboard = new DashboardService(lm);
 
   _statusBar = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left,
@@ -39,14 +42,30 @@ export async function activate(
 
   context.subscriptions.push(
     vscode.commands.registerCommand("devflowStudio.open", () => {
-      DashboardPanel.show(context, _registry, _ado, _standup, _notes, _worked);
+      DashboardPanel.show(
+        context,
+        _registry,
+        _ado,
+        _standup,
+        _notes,
+        _worked,
+        _dashboard,
+      );
     }),
     vscode.commands.registerCommand("devflowStudio.refresh", async () => {
       await refresh();
       vscode.window.showInformationMessage("DevFlow Studio refreshed.");
     }),
     vscode.commands.registerCommand("devflowStudio.generateStandup", () => {
-      DashboardPanel.show(context, _registry, _ado, _standup, _notes, _worked);
+      DashboardPanel.show(
+        context,
+        _registry,
+        _ado,
+        _standup,
+        _notes,
+        _worked,
+        _dashboard,
+      );
       vscode.commands.executeCommand("devflowStudio.open");
     }),
     vscode.commands.registerCommand(

@@ -1,21 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useStore, applyView, applyFilters } from './state/store';
+import { PersonalDashboard } from './routes/personal-dashboard';
 import { Dashboard } from './routes/dashboard';
 import { StandupPanel } from './routes/standup';
 import { Settings } from './routes/settings';
 import { Onboarding } from './components/onboarding';
 import { call } from './lib/rpc';
 
-type Tab = 'dashboard' | 'standup' | 'settings';
+type Tab = 'overview' | 'work-items' | 'standup' | 'settings';
 
 export const App: React.FC = () => {
-    const [tab, setTab] = useState<Tab>('dashboard');
+    const [tab, setTab] = useState<Tab>('overview');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const load = useStore((s) => s.load);
     const loadNotes = useStore((s) => s.loadNotes);
     const loadWorked = useStore((s) => s.loadWorked);
     const loadSettings = useStore((s) => s.loadSettings);
     const items = useStore((s) => s.items);
+    const loading = useStore((s) => s.loading);
+    const error = useStore((s) => s.error);
     const notes = useStore((s) => s.notes);
     const worked = useStore((s) => s.worked);
     const view = useStore((s) => s.view);
@@ -58,7 +61,7 @@ export const App: React.FC = () => {
                     onChange={(e) => setSearch(e.target.value)}
                     style={{ width: 280 }}
                 />
-                {tab === 'dashboard' && (
+                {tab === 'work-items' && (
                     <div className="board-toggle">
                         <button
                             className={boardMode === 'grid' ? '' : 'secondary'}
@@ -76,6 +79,11 @@ export const App: React.FC = () => {
             </header>
 
             <aside className="sidebar">
+                <div className="section-title">Dashboard</div>
+                <div className={`view ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>
+                    <span>My Overview</span>
+                </div>
+
                 <div className="section-title">Views</div>
                 {([
                     ['active', 'My Active'],
@@ -90,7 +98,7 @@ export const App: React.FC = () => {
                     <div
                         key={id}
                         className={`view ${view === id ? 'active' : ''}`}
-                        onClick={() => { setView(id); setTab('dashboard'); }}
+                        onClick={() => { setView(id); setTab('work-items'); }}
                     >
                         <span>{label}</span>
                         <span>{applyView(items, id, notes, worked).length}</span>
@@ -103,7 +111,31 @@ export const App: React.FC = () => {
             </aside>
 
             <main className="main">
-                {tab === 'dashboard' && <Dashboard items={filtered} allItems={items} />}
+                {tab === 'overview' && (
+                    <>
+                        {loading && items.length === 0 && (
+                            <div style={{ padding: 40, textAlign: 'center' }}>
+                                <h3>Loading your dashboard...</h3>
+                                <p>Fetching work items from Azure DevOps...</p>
+                            </div>
+                        )}
+                        {error && items.length === 0 && (
+                            <div style={{ padding: 40, textAlign: 'center', color: '#f44336' }}>
+                                <h3>Error loading work items</h3>
+                                <p>{error}</p>
+                                <button onClick={() => load(true)}>Retry</button>
+                            </div>
+                        )}
+                        {!loading && items.length === 0 && !error && (
+                            <div style={{ padding: 40, textAlign: 'center' }}>
+                                <h3>No work items found</h3>
+                                <p>Check your Azure DevOps configuration in Settings.</p>
+                            </div>
+                        )}
+                        {items.length > 0 && <PersonalDashboard allItems={items} />}
+                    </>
+                )}
+                {tab === 'work-items' && <Dashboard items={filtered} allItems={items} />}
                 {tab === 'standup' && <StandupPanel />}
                 {tab === 'settings' && <Settings />}
             </main>
