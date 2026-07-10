@@ -121,6 +121,7 @@ export const useStore = create<StoreState>((set, get) => ({
       });
       set({ items, loading: false });
     } catch (e) {
+      console.error("[STORE] Failed to load work items:", e);
       set({
         loading: false,
         error: e instanceof Error ? e.message : String(e),

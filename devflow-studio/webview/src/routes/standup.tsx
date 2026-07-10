@@ -15,6 +15,29 @@ export const StandupPanel: React.FC = () => {
     const [hours, setHours] = useState(24);
     const streamingRef = useRef('');
 
+    // Load last generated standup on mount
+    useEffect(() => {
+        void loadCurrentStandup();
+    }, []);
+
+    const loadCurrentStandup = async () => {
+        try {
+            const result = await call<{ standup: { fullText: string; timeWindow: string; workItemCount: number; blockerCount: number } | null }>('standup.current', {});
+            if (result.standup) {
+                setMarkdown(result.standup.fullText);
+                setStats({
+                    windowHours: result.standup.timeWindow.includes('24') ? 24 : result.standup.timeWindow.includes('48') ? 48 : 24,
+                    commentCount: 0,
+                    stateChangeCount: 0,
+                    blockedCount: result.standup.blockerCount,
+                    plannedCount: result.standup.workItemCount,
+                });
+            }
+        } catch (e) {
+            // No standup yet, that's fine
+        }
+    };
+
     useEffect(() => {
         return onEvent((event, data) => {
             if (event === 'standup.progress') {

@@ -14,6 +14,7 @@ export const WorkItemSchema = z.object({
   tags: z.array(z.string()).default([]),
   changedDate: z.string().optional(),
   createdDate: z.string().optional(),
+  closedDate: z.string().optional(),
   parentId: z.number().optional(),
   url: z.string().optional(),
 });
@@ -192,6 +193,41 @@ export const RpcRequestSchema = z.discriminatedUnion("method", [
     method: z.literal("diag.run"),
     params: z.object({}).optional(),
   }),
+  z.object({
+    id: z.string(),
+    method: z.literal("dashboard.metrics"),
+    params: z.object({}).optional(),
+  }),
+  z.object({
+    id: z.string(),
+    method: z.literal("ai.generateMotivation"),
+    params: z.object({}).optional(),
+  }),
+  z.object({
+    id: z.string(),
+    method: z.literal("ai.generateInsights"),
+    params: z.object({}).optional(),
+  }),
+  z.object({
+    id: z.string(),
+    method: z.literal("standup.history"),
+    params: z.object({}).optional(),
+  }),
+  z.object({
+    id: z.string(),
+    method: z.literal("standup.delete"),
+    params: z.object({ index: z.number() }),
+  }),
+  z.object({
+    id: z.string(),
+    method: z.literal("standup.current"),
+    params: z.object({}).optional(),
+  }),
+  z.object({
+    id: z.string(),
+    method: z.literal("clipboard.write"),
+    params: z.object({ text: z.string() }),
+  }),
 ]);
 export type RpcRequest = z.infer<typeof RpcRequestSchema>;
 
@@ -202,4 +238,5 @@ export type RpcResponse =
 export type RpcEvent =
   | { event: "workItems.changed"; data: { count: number } }
   | { event: "standup.progress"; data: { stage: string } }
-  | { event: "standup.token"; data: { text: string } };
+  | { event: "standup.token"; data: { text: string } }
+  | { event: "standup.changed"; data: Record<string, never> };

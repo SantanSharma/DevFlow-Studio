@@ -4,6 +4,7 @@ import type { AdoService } from "../services/ado-service";
 import type { StandupService } from "../services/standup-service";
 import type { NotesService } from "../services/notes-service";
 import type { WorkedService } from "../services/worked-service";
+import type { DashboardService } from "../services/dashboard-service";
 import {
   RpcRequestSchema,
   type RpcRequest,
@@ -22,6 +23,7 @@ export class RpcBridge {
     private readonly _standup: StandupService,
     private readonly _notes: NotesService,
     private readonly _worked: WorkedService,
+    private readonly _dashboard: DashboardService,
     private readonly _context: vscode.ExtensionContext,
   ) {}
 
@@ -56,8 +58,12 @@ export class RpcBridge {
 
   private async _dispatch(req: RpcRequest): Promise<unknown> {
     switch (req.method) {
-      case "workItems.list":
-        return this._ado.listMyWorkItems({ refresh: req.params?.refresh });
+      case "workItems.list": {
+        const items = await this._ado.listMyWorkItems({
+          refresh: req.params?.refresh,
+        });
+        return items;
+      }
       case "workItems.detail":
         return this._ado.getDetail(req.params.id);
       case "workItems.updateState":
@@ -148,6 +154,55 @@ export class RpcBridge {
         return { ok: true };
       case "diag.run":
         return this._ado.diagnose();
+      case "dashboard.metrics": {
+        const items = await this._ado.listMyWorkItems({ refresh: false });
+        const result = await this._dashboard.calculateMetrics(items, {
+          dateRange: "current-sprint",
+          workItemTypes: [],
+          states: [],
+        });
+        return result;
+      }
+      case "ai.generateMotivation": {
+        try {
+          const message = await this._dashboard.generateMotivation();
+          return { message };
+        } catch (e) {
+          logger.error("[RPC] ai.generateMotivation failed:", e);
+          throw e;
+        }
+      }
+      case "ai.generateInsights": {
+        try {
+          const items = await this._ado.listMyWorkItems({ refresh: false });
+          const metrics = await this._dashboard.calculateMetrics(items, {
+            dateRange: "current-sprint",
+            workItemTypes: [],
+            states: [],
+          });
+          const insights = await this._dashboard.generateInsights(
+            metrics,
+            items.slice(0, 50),
+          );
+          return { insights };
+        } catch (e) {
+          logger.error("[RPC] ai.generateInsights failed:", e);
+          throw e;
+        }
+      }
+      case "standup.history":
+        return { standups: this._standup.getHistory() };
+      case "standup.current": {
+        const current = this._standup.getCurrentStandup();
+        return current ? { standup: current } : { standup: null };
+      }
+      case "standup.delete":
+        await this._standup.deleteStandup(req.params.index);
+        this.emit({ event: "standup.changed", data: {} });
+        return { ok: true };
+      case "clipboard.write":
+        await vscode.env.clipboard.writeText(req.params.text);
+        return { ok: true };
     }
   }
 }
