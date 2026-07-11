@@ -215,18 +215,24 @@ Give 2-4 specific, actionable observations from this data. No generic advice.`;
 
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
       const monthLabel = date.toLocaleDateString("en-US", {
         month: "short",
         year: "2-digit",
       });
 
+      // Compare local year/month of the closed date against the bucket.
+      // Never derive the bucket key via toISOString(): local midnight on the
+      // 1st converts to the previous month in UTC+ timezones, which shifted
+      // every bucket back a month and dropped current-month closures entirely.
       const points = items
         .filter((item) => {
           const effectiveClosedDate = this._getEffectiveClosedDate(item);
           if (!effectiveClosedDate) return false;
-          const closedMonth = effectiveClosedDate.slice(0, 7);
-          return closedMonth === monthKey;
+          const closed = new Date(effectiveClosedDate);
+          return (
+            closed.getFullYear() === date.getFullYear() &&
+            closed.getMonth() === date.getMonth()
+          );
         })
         .reduce((sum, item) => sum + (item.storyPoints || 0), 0);
 
