@@ -1,6 +1,6 @@
 import type { WorkItem } from "../rpc/schema";
 import type { LmClient } from "./lm-client";
-import { logger } from "../util/logger";
+import { isCompletedState } from "../util/completed-states";
 
 export type TimeRange = "weekly" | "monthly" | "half-yearly" | "yearly";
 
@@ -43,20 +43,13 @@ interface DashboardFilters {
 }
 
 export class DashboardService {
-  // Completed state names (case-insensitive)
-  private readonly COMPLETED_STATES = [
-    "closed",
-    "resolved",
-    "done",
-    "dev complete",
-  ];
-
   constructor(private readonly _lm: LmClient) {}
 
+  // Completed states come from the devflowStudio.completedStates setting
+  // (case-insensitive) so orgs with custom workflows can define what counts
+  // as done.
   private _isCompleted(state?: string): boolean {
-    if (!state) return false;
-    const normalized = state.toLowerCase().trim();
-    return this.COMPLETED_STATES.includes(normalized);
+    return isCompletedState(state);
   }
 
   private _getEffectiveClosedDate(item: WorkItem): string | undefined {

@@ -557,8 +557,14 @@ input[type="text"], input[type="number"], textarea {
     display: flex;
     align-items: flex-end;
     justify-content: space-around;
-    height: 150px;
+    height: 165px;
     gap: 4px;
+}
+
+.bar-value {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.85;
 }
 
 .bar-item {

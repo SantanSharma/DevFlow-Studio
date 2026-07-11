@@ -180,7 +180,10 @@ export class RpcBridge {
       case "diag.run":
         return this._ado.diagnose();
       case "dashboard.metrics": {
-        const items = await this._ado.listMyWorkItems({ refresh: false });
+        const raw = await this._ado.listMyWorkItems({ refresh: false });
+        // Fill in completion dates from revision history for completed items
+        // whose custom states never receive an ADO Closed Date.
+        const items = await this._ado.resolveCompletionDates(raw);
         const result = await this._dashboard.calculateMetrics(items, {
           dateRange: "current-sprint",
           workItemTypes: [],
@@ -190,7 +193,8 @@ export class RpcBridge {
       }
       case "ai.generateInsights": {
         try {
-          const items = await this._ado.listMyWorkItems({ refresh: false });
+          const raw = await this._ado.listMyWorkItems({ refresh: false });
+          const items = await this._ado.resolveCompletionDates(raw);
           const metrics = await this._dashboard.calculateMetrics(items, {
             dateRange: "current-sprint",
             workItemTypes: [],

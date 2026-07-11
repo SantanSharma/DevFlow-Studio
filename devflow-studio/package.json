@@ -120,6 +120,22 @@
           "default": "",
           "description": "Optional saved ADO query ID (GUID) or path (e.g. 'My Queries/SS-WorkItems'). When set, the dashboard uses this query as the single source of truth for assigned work items, executing it fresh on every refresh. All dashboard views filter this result set client-side."
         },
+        "devflowStudio.completedStates": {
+          "type": "array",
+          "scope": "application",
+          "items": { "type": "string" },
+          "default": [
+            "Closed",
+            "Resolved",
+            "Done",
+            "Dev Complete",
+            "Dev and QA Closed",
+            "In QA",
+            "Ready for QA",
+            "Ready for Test"
+          ],
+          "description": "Work item states treated as completed for dashboard metrics (story points chart, velocity, summaries). Case-insensitive. For states that never receive a Closed Date in Azure DevOps, the completion date is resolved from the work item's revision history."
+        },
         "devflowStudio.storyPointsFields": {
           "type": "array",
           "scope": "application",

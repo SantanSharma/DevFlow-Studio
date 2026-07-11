@@ -17,6 +17,7 @@ export const StoryPointsChart: React.FC<{ data: StoryPointsData[] }> = ({ data }
     }
 
     const maxPoints = Math.max(...data.map(d => d.points), 1);
+    const BAR_AREA_PX = 130; // pixel height of the tallest bar
 
     return (
         <div className="widget-content">
@@ -32,9 +33,14 @@ export const StoryPointsChart: React.FC<{ data: StoryPointsData[] }> = ({ data }
                 <div className="bar-chart">
                     {data.map((item, idx) => (
                         <div key={idx} className="bar-item">
-                            <div 
-                                className="bar" 
-                                style={{ height: `${(item.points / maxPoints) * 100}%` }}
+                            {item.points > 0 && (
+                                <div className="bar-value">{item.points}</div>
+                            )}
+                            <div
+                                className="bar"
+                                // Pixel height: percentage heights collapse to 0
+                                // because .bar-item has no fixed height.
+                                style={{ height: `${Math.max(Math.round((item.points / maxPoints) * BAR_AREA_PX), 2)}px` }}
                                 title={`${item.month}: ${item.points} points`}
                             />
                             <div className="bar-label">{item.month.substring(0, 3)}</div>
