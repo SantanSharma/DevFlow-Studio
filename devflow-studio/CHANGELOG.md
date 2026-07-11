@@ -2,6 +2,33 @@
 
 All notable changes to the "DevFlow Studio" extension will be documented in this file.
 
+## [0.1.3] - 2026-07-11
+
+### Fixed
+
+- 🔗 **Azure DevOps Links** - "Open in Azure DevOps" no longer points at a hardcoded placeholder organization
+  - New `devflowStudio.adoOrgUrl` setting (also editable from the Settings page)
+  - Organization name is parsed from the configured URL; the link is hidden with a hint when unconfigured
+- 📊 **Story Points Accuracy** - Charts and velocity now aggregate strictly by `closedDate`
+  - Removed the `changedDate` fallback that shifted completed points to the wrong month when closed items were edited
+
+### Added
+
+- 🗂️ **Today's Focus List as Kanban** - Full-width board with 4 configurable state columns (New, Ready for Dev, In Development, Dev Complete); cards open the detail drawer
+- 📋 **Summary Details** - Weekly Summary renamed, moved next to the Story Points chart, and given a Weekly / Monthly / Half-Yearly / Yearly filter
+- 📈 **Completed vs Planned** - Time-range filter plus an explanation tooltip of what the numbers mean
+- ℹ️ **Info Tooltips** - Every dashboard section now explains what it shows, how it is calculated, and how it helps
+
+### Removed
+
+- ✂️ **AI Motivation** component (Productivity Insights stays)
+- ✂️ **Work Item Aging** widget and all related code
+
+### Technical
+
+- Metrics response now includes pre-computed `summaryByRange` for all four time ranges, so filter changes are instant with no extra RPC calls
+- Token-optimized AI prompts for insights (~75% smaller) and standup generation (condensed rules, tighter truncation) with token-estimate logging in the LM client
+
 ## [0.1.2] - 2026-07-05
 
 ### Fixed

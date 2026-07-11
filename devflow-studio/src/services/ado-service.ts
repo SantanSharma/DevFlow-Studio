@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import type { McpRegistry } from "../mcp/registry";
 import type { WorkItem } from "../rpc/schema";
 import { logger } from "../util/logger";
+import { getCompletedStates } from "../util/completed-states";
 
 interface ToolCallResult {
   content?: Array<{ type: string; text?: string }>;
@@ -20,6 +21,7 @@ interface BatchWorkItemFields {
   "System.Tags"?: string;
   "System.ChangedDate"?: string;
   "System.CreatedDate"?: string;
+  "Microsoft.VSTS.Common.ClosedDate"?: string;
   "Microsoft.VSTS.Common.Priority"?: number;
   "System.Parent"?: number;
   [key: string]: unknown;
@@ -480,6 +482,113 @@ export class AdoService {
       logger.warn("getMyPullRequests failed (tool may not be available)", e);
     }
     return out;
+  }
+
+  // Completion dates resolved from revision history, cached per item id+rev
+  // so repeated dashboard loads don't refetch unchanged items.
+  private _completionDateCache = new Map<
+    number,
+    { rev?: number; date: string | null }
+  >();
+
+  /**
+   * Returns items with closedDate filled in for completed items that lack one.
+   * Azure DevOps only stamps Microsoft.VSTS.Common.ClosedDate when an item
+   * enters the process's "Completed" category, so custom done states (e.g.
+   * "Dev and QA Closed", "Ready for QA") never get it. For those, the
+   * completion date is the last revision where the item entered any
+   * configured completed state.
+   */
+  public async resolveCompletionDates(items: WorkItem[]): Promise<WorkItem[]> {
+    const completedSet = getCompletedStates();
+    const needsResolve = items.filter((i) => {
+      if (i.closedDate) return false;
+      if (!completedSet.has(i.state.toLowerCase().trim())) return false;
+      const cached = this._completionDateCache.get(i.id);
+      return !cached || cached.rev !== i.rev;
+    });
+
+    if (needsResolve.length > 0) {
+      logger.info(
+        `Resolving completion dates from revisions for ${needsResolve.length} item(s)`,
+      );
+      const CONCURRENCY = 5;
+      for (let i = 0; i < needsResolve.length; i += CONCURRENCY) {
+        const chunk = needsResolve.slice(i, i + CONCURRENCY);
+        await Promise.all(
+          chunk.map(async (item) => {
+            const date = await this._fetchCompletionDate(item.id, completedSet);
+            this._completionDateCache.set(item.id, { rev: item.rev, date });
+          }),
+        );
+      }
+    }
+
+    return items.map((i) => {
+      if (i.closedDate) return i;
+      const cached = this._completionDateCache.get(i.id);
+      return cached?.date ? { ...i, closedDate: cached.date } : i;
+    });
+  }
+
+  /** Last revision date where the item transitioned into a completed state. */
+  private async _fetchCompletionDate(
+    id: number,
+    completedSet: Set<string>,
+  ): Promise<string | null> {
+    try {
+      const raw = (await this._callJson("wit_get_work_item_updates", {
+        id,
+        project: this._project,
+      })) as {
+        value?: Array<{
+          revisedDate?: string;
+          fields?: Record<string, { oldValue?: unknown; newValue?: unknown }>;
+        }>;
+      };
+      let completionDate: string | null = null;
+      for (const upd of raw.value ?? []) {
+        const stateField = upd.fields?.["System.State"];
+        if (!stateField || stateField.oldValue === stateField.newValue) {
+          continue;
+        }
+        const newState = String(stateField.newValue ?? "")
+          .toLowerCase()
+          .trim();
+        // Track the LAST transition into a completed state; items that bounce
+        // back to development and complete again count at the final date.
+        if (completedSet.has(newState)) {
+          const date = this._updateDate(upd);
+          if (date) {
+            completionDate = date;
+          }
+        } else {
+          completionDate = null;
+        }
+      }
+      return completionDate;
+    } catch (e) {
+      logger.warn(`Failed to resolve completion date for #${id}`, e);
+      return null;
+    }
+  }
+
+  /**
+   * Date of a revision update. Prefers the System.ChangedDate field value:
+   * ADO reports revisedDate as 9999-01-01 for the latest revision.
+   */
+  private _updateDate(upd: {
+    revisedDate?: string;
+    fields?: Record<string, { oldValue?: unknown; newValue?: unknown }>;
+  }): string | null {
+    const changed = upd.fields?.["System.ChangedDate"]?.newValue;
+    if (typeof changed === "string" && changed) {
+      return changed;
+    }
+    if (upd.revisedDate && new Date(upd.revisedDate).getFullYear() < 9000) {
+      return upd.revisedDate;
+    }
+    return null;
   }
 
   public async getStateChanges(

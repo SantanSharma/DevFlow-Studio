@@ -402,35 +402,6 @@ input[type="text"], input[type="number"], textarea {
 
 /* AI Components - Visually Prominent */
 
-.ai-motivation {
-    background: linear-gradient(135deg, rgba(88, 0, 156, 0.15) 0%, rgba(156, 39, 176, 0.15) 100%);
-    border: 2px solid rgba(156, 39, 176, 0.4);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.1);
-    min-height: 48px;
-}
-
-.ai-motivation-icon {
-    font-size: 24px;
-    flex-shrink: 0;
-}
-
-.ai-motivation-content {
-    flex: 1;
-}
-
-.motivation-text {
-    font-size: 13px;
-    font-weight: normal;
-    margin: 0;
-    line-height: 1.4;
-}
-
 .loading-text {
     font-size: 12px;
     opacity: 0.7;
@@ -525,7 +496,7 @@ input[type="text"], input[type="number"], textarea {
 }
 
 .dashboard-row.row-1 {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr;
 }
 
 .dashboard-row.row-2 {
@@ -586,8 +557,14 @@ input[type="text"], input[type="number"], textarea {
     display: flex;
     align-items: flex-end;
     justify-content: space-around;
-    height: 150px;
+    height: 165px;
     gap: 4px;
+}
+
+.bar-value {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.85;
 }
 
 .bar-item {
@@ -615,26 +592,80 @@ input[type="text"], input[type="number"], textarea {
     opacity: 0.7;
 }
 
-/* Focus List */
+/* Today's Focus Kanban */
 
-.focus-list {
+.focus-kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.focus-column {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-height: 400px;
+    gap: 8px;
+    background: var(--vscode-sideBar-background, rgba(127,127,127,0.05));
+    border: 1px solid var(--vscode-panel-border, #333);
+    border-radius: 6px;
+    padding: 10px;
+    min-width: 0;
+}
+
+.focus-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.focus-column-header h4 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    opacity: 0.85;
+}
+
+.focus-column-count {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: var(--vscode-badge-background, rgba(127,127,127,0.25));
+    color: var(--vscode-badge-foreground, inherit);
+}
+
+.focus-column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 380px;
     overflow-y: auto;
 }
 
-.focus-item {
+.focus-card {
     padding: 10px;
-    background: var(--vscode-sideBar-background, rgba(127,127,127,0.05));
+    background: var(--vscode-editor-background);
     border: 1px solid var(--vscode-panel-border, #333);
     border-radius: 4px;
+    cursor: pointer;
     transition: border-color 0.2s;
 }
 
-.focus-item:hover {
+.focus-card:hover {
     border-color: var(--vscode-focusBorder, #007acc);
+}
+
+@media (max-width: 1200px) {
+    .focus-kanban-board {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .focus-kanban-board {
+        grid-template-columns: 1fr;
+    }
 }
 
 .item-header {
@@ -737,50 +768,6 @@ input[type="text"], input[type="number"], textarea {
     opacity: 0.7;
 }
 
-/* Work Item Aging */
-
-.aging-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.aging-item {
-    padding: 8px;
-    background: var(--vscode-sideBar-background, rgba(127,127,127,0.05));
-    border-left: 3px solid;
-    border-radius: 3px;
-}
-
-.aging-item.aging-0-2d {
-    border-color: #2ea043;
-}
-
-.aging-item.aging-3-5d {
-    border-color: #d29922;
-}
-
-.aging-item.aging-6-10d {
-    border-color: #ff8c00;
-}
-
-.aging-item.aging-10d\+ {
-    border-color: #d73a49;
-}
-
-.aging-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-}
-
-.aging-days {
-    font-size: 11px;
-    font-weight: 600;
-    opacity: 0.8;
-}
-
 /* Personal Velocity */
 
 .velocity-summary {
@@ -821,7 +808,13 @@ input[type="text"], input[type="number"], textarea {
     opacity: 0.7;
 }
 
-/* Weekly Summary */
+/* Summary Details */
+
+.summary-period {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-bottom: 12px;
+}
 
 .summary-stats {
     display: grid;
@@ -897,6 +890,65 @@ input[type="text"], input[type="number"], textarea {
 }
 .copy-btn:active {
     transform: translateY(0);
+}
+
+/* Info Tooltips */
+
+.info-tooltip-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.info-icon {
+    cursor: help;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    font-size: 0.9em;
+}
+
+.info-icon:hover {
+    opacity: 1;
+}
+
+.info-tooltip-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--vscode-editorHoverWidget-background, #252526);
+    border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    max-width: 60vw;
+    z-index: 1000;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.5;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.tooltip-section {
+    margin-bottom: 8px;
+}
+
+.tooltip-section:last-child {
+    margin-bottom: 0;
+}
+
+.tooltip-section strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.tooltip-section p {
+    margin: 0;
+    color: var(--vscode-foreground);
 }
 
 /* Responsive adjustments */

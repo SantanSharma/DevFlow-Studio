@@ -62,16 +62,21 @@ export const DetailDrawer: React.FC<Props> = ({ id, onClose }) => {
         <div className="drawer">
             <span className="close" onClick={onClose}>✕</span>
             <h2 style={{ marginTop: 0 }}>#{id} {title}</h2>
-            {adoUrl && (
-                <div style={{ marginBottom: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button
-                        type="button"
-                        className="external-link"
-                        style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
-                        onClick={() => void openExternal(adoUrl)}
-                    >
-                        Open in Azure DevOps ↗
-                    </button>
+            <div style={{ marginBottom: 8, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {adoUrl ? (
+                        <button
+                            type="button"
+                            className="external-link"
+                            style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+                            onClick={() => void openExternal(adoUrl)}
+                        >
+                            Open in Azure DevOps ↗
+                        </button>
+                    ) : (
+                        <span style={{ fontSize: 11, opacity: 0.6 }}>
+                            Set your ADO organization URL in Settings to enable &ldquo;Open in Azure DevOps&rdquo; links.
+                        </span>
+                    )}
                     <button
                         type="button"
                         className={isWorked ? 'secondary' : ''}
@@ -100,8 +105,7 @@ export const DetailDrawer: React.FC<Props> = ({ id, onClose }) => {
                     >
                         {isWorked ? '★ Pinned to My Worked' : '☆ Save to My Worked'}
                     </button>
-                </div>
-            )}
+            </div>
             {error && <div className="error">{error}</div>}
             {!detail && !error && <div>Loading…</div>}
             {detail && (

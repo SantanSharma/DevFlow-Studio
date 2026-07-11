@@ -1,4 +1,5 @@
 import React from 'react';
+import { InfoTooltip } from './info-tooltip';
 
 interface VelocityData {
     period: string;
@@ -20,7 +21,14 @@ export const PersonalVelocity: React.FC<{ data: VelocityData[] }> = ({ data }) =
 
     return (
         <div className="widget-content">
-            <h3>Personal Velocity</h3>
+            <h3>
+                Personal Velocity
+                <InfoTooltip
+                    description="Story points completed over recent weekly periods."
+                    calculation="Tracks story points from items closed each week over the last 4 weeks, based on the closed date."
+                    benefit="Helps with sprint planning, capacity forecasting, and identifying velocity trends."
+                />
+            </h3>
             <div className="velocity-summary">
                 <div className="stat">
                     <div className="stat-value">{Math.round(avgPoints)}</div>

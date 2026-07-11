@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { WorkItem } from '../state/store';
+import { WorkItem, useStore } from '../state/store';
+import { InfoTooltip } from './info-tooltip';
 
 interface MultiDropdownProps {
     label: string;
@@ -67,145 +68,156 @@ const MultiDropdown: React.FC<MultiDropdownProps> = ({
     );
 };
 
-export const TodaysFocusList: React.FC<{ items: WorkItem[] }> = ({ items }) => {
-    const [sortBy, setSortBy] = useState<'priority' | 'age' | 'storyPoints'>('priority');
-    
-    // Default selected states matching My Active view
-    const [selectedStates, setSelectedStates] = useState<Set<string>>(new Set([
-        'Investigation',
-        'Ready for QA',
-        'New',
-        'In Development',
-        'Ready for Dev',
-        'Ready to Retire/Estimate',
-        'Dev and QA Closed',
-        'In Deployment'
-    ]));
+// All states offered in the per-column filter dropdowns, matching FilterBar.
+const ALL_STATES = [
+    'New',
+    'Proposed',
+    'To Do',
+    'Triage',
+    'Investigation',
+    'Ready for Dev',
+    'Active',
+    'Committed',
+    'In Progress',
+    'In Development',
+    'Code Review',
+    'Ready for Test',
+    'In Test',
+    'Ready for QA',
+    'In QA',
+    'Blocked',
+    'On Hold',
+    'Redbin/Blocked',
+    'Dev and QA Closed',
+    'In Deployment',
+    'Ready to Retire/Estimate',
+    'Resolved',
+    'Done',
+    'Closed',
+    'Removed',
+];
 
-    // Get ALL possible states (not just from items) - matching FilterBar
+interface FocusColumn {
+    title: string;
+    states: string[];
+}
+
+const DEFAULT_COLUMNS: FocusColumn[] = [
+    {
+        title: 'NEW',
+        states: ['New', 'Proposed', 'To Do', 'Triage'],
+    },
+    {
+        title: 'READY FOR DEV',
+        states: ['Ready for Dev', 'Ready to Retire/Estimate'],
+    },
+    {
+        title: 'IN DEVELOPMENT',
+        states: ['In Development', 'Active', 'In Progress', 'Code Review'],
+    },
+    {
+        title: 'DEV COMPLETE',
+        states: ['Dev and QA Closed', 'Ready for QA', 'In QA', 'Ready for Test'],
+    },
+];
+
+const FocusCard: React.FC<{ item: WorkItem; onClick: (id: number) => void }> = ({ item, onClick }) => (
+    <div className="focus-card" onClick={() => onClick(item.id)}>
+        <div className="item-header">
+            <span className="item-id">#{item.id}</span>
+            <span className={`item-type type-${item.type.toLowerCase().replace(/\s+/g, '-')}`}>
+                {item.type}
+            </span>
+            {item.tags.includes('Blocked') && (
+                <span className="blocked-badge">🚫 Blocked</span>
+            )}
+        </div>
+        <div className="item-title">{item.title}</div>
+        <div className="item-meta">
+            <span className="item-state">{item.state}</span>
+            {item.storyPoints && (
+                <span className="item-points">{item.storyPoints} pts</span>
+            )}
+            {item.priority && (
+                <span className="item-priority">P{item.priority}</span>
+            )}
+        </div>
+    </div>
+);
+
+export const TodaysFocusList: React.FC<{ items: WorkItem[] }> = ({ items }) => {
+    const select = useStore((s) => s.select);
+    const [columnStates, setColumnStates] = useState<Set<string>[]>(
+        DEFAULT_COLUMNS.map((col) => new Set(col.states)),
+    );
+
+    // Offer every known state plus anything present on the actual items.
     const availableStates = useMemo(() => {
-        const allStates = new Set<string>([
-            'New',
-            'Proposed',
-            'To Do',
-            'Triage',
-            'Investigation',
-            'Ready for Dev',
-            'Active',
-            'Committed',
-            'In Progress',
-            'In Development',
-            'Code Review',
-            'Ready for Test',
-            'In Test',
-            'Ready for QA',
-            'In QA',
-            'Blocked',
-            'On Hold',
-            'Redbin/Blocked',
-            'Dev and QA Closed',
-            'In Deployment',
-            'Ready to Retire/Estimate',
-            'Resolved',
-            'Done',
-            'Closed',
-            'Removed',
-        ]);
-        // Add any states from actual items that aren't in the default list
-        items.forEach(item => allStates.add(item.state));
-        return Array.from(allStates).sort();
+        const all = new Set<string>(ALL_STATES);
+        items.forEach((item) => all.add(item.state));
+        return Array.from(all).sort();
     }, [items]);
 
-    // Filter items by selected states
-    const filteredItems = useMemo(() => {
-        if (selectedStates.size === 0) return items;
-        return items.filter(item => selectedStates.has(item.state));
-    }, [items, selectedStates]);
+    const columns = useMemo(
+        () => DEFAULT_COLUMNS.map((col, idx) => {
+            const states = columnStates[idx];
+            const colItems = items
+                .filter((item) => states.has(item.state))
+                .sort((a, b) => (a.priority || 999) - (b.priority || 999));
+            return { title: col.title, states, items: colItems };
+        }),
+        [items, columnStates],
+    );
 
-    const sortedItems = useMemo(() => {
-        return [...filteredItems].sort((a, b) => {
-            if (sortBy === 'priority') {
-                return (a.priority || 999) - (b.priority || 999);
-            } else if (sortBy === 'age') {
-                const dateA = a.changedDate ? new Date(a.changedDate).getTime() : 0;
-                const dateB = b.changedDate ? new Date(b.changedDate).getTime() : 0;
-                return dateA - dateB;
-            } else {
-                return (b.storyPoints || 0) - (a.storyPoints || 0);
-            }
-        });
-    }, [filteredItems, sortBy]);
-
-    const toggleState = (state: string) => {
-        const newStates = new Set(selectedStates);
-        if (newStates.has(state)) {
-            newStates.delete(state);
-        } else {
-            newStates.add(state);
-        }
-        setSelectedStates(newStates);
+    const setStatesForColumn = (idx: number, next: Set<string>): void => {
+        setColumnStates((prev) => prev.map((s, i) => (i === idx ? next : s)));
     };
 
-    const selectAllStates = () => setSelectedStates(new Set(availableStates));
-    const clearAllStates = () => setSelectedStates(new Set());
-
-    const getAgeDays = (item: WorkItem) => {
-        if (!item.changedDate) return 0;
-        const diff = Date.now() - new Date(item.changedDate).getTime();
-        return Math.floor(diff / (1000 * 60 * 60 * 24));
-    };
+    const totalShown = columns.reduce((sum, col) => sum + col.items.length, 0);
 
     return (
-        <div className="widget-content">
+        <div className="widget-content todays-focus-kanban">
             <div className="widget-header">
-                <h3>Today's Focus List ({filteredItems.length})</h3>
-                <div className="sort-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <MultiDropdown
-                        label="Status"
-                        options={availableStates}
-                        selected={selectedStates}
-                        onToggle={toggleState}
-                        onClear={clearAllStates}
-                        onSelectAll={selectAllStates}
+                <h3>
+                    Today&rsquo;s Focus List ({totalShown})
+                    <InfoTooltip
+                        description="Kanban board view of your currently assigned work items across different stages."
+                        calculation="Displays all active work items assigned to you, organized into four configurable state columns."
+                        benefit="Visual overview of your current work; helps prioritize and shows progress across stages. Click a card to open its details."
                     />
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={{ fontSize: '11px' }}>
-                        <option value="priority">Sort by Priority</option>
-                        <option value="age">Sort by Age</option>
-                        <option value="storyPoints">Sort by Story Points</option>
-                    </select>
-                </div>
+                </h3>
             </div>
-
-            {sortedItems.length === 0 ? (
-                <p className="empty-state">No items match the selected filters.</p>
-            ) : (
-                <div className="focus-list">
-                    {sortedItems.map((item) => (
-                        <div key={item.id} className="focus-item">
-                            <div className="item-header">
-                                <span className="item-id">#{item.id}</span>
-                                <span className={`item-type type-${item.type.toLowerCase().replace(/\s+/g, '-')}`}>
-                                    {item.type}
-                                </span>
-                                {item.tags.includes('Blocked') && (
-                                    <span className="blocked-badge">🚫 Blocked</span>
-                                )}
-                            </div>
-                            <div className="item-title">{item.title}</div>
-                            <div className="item-meta">
-                                <span className="item-state">{item.state}</span>
-                                {item.storyPoints && (
-                                    <span className="item-points">{item.storyPoints} pts</span>
-                                )}
-                                {item.priority && (
-                                    <span className="item-priority">P{item.priority}</span>
-                                )}
-                                <span className="item-age">{getAgeDays(item)}d old</span>
-                            </div>
+            <div className="focus-kanban-board">
+                {columns.map((col, idx) => (
+                    <div key={col.title} className="focus-column">
+                        <div className="focus-column-header">
+                            <h4>{col.title}</h4>
+                            <span className="focus-column-count">{col.items.length}</span>
                         </div>
-                    ))}
-                </div>
-            )}
+                        <MultiDropdown
+                            label="States"
+                            options={availableStates}
+                            selected={col.states}
+                            onToggle={(state) => {
+                                const next = new Set(col.states);
+                                next.has(state) ? next.delete(state) : next.add(state);
+                                setStatesForColumn(idx, next);
+                            }}
+                            onClear={() => setStatesForColumn(idx, new Set())}
+                            onSelectAll={(all) => setStatesForColumn(idx, new Set(all))}
+                        />
+                        <div className="focus-column-cards">
+                            {col.items.length === 0 ? (
+                                <p className="empty-state">No items</p>
+                            ) : (
+                                col.items.map((item) => (
+                                    <FocusCard key={item.id} item={item} onClick={select} />
+                                ))
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { WorkItem } from '../state/store';
+import { WorkItem, useStore } from '../state/store';
 import { call } from '../lib/rpc';
-import { AiMotivation } from '../components/ai-motivation';
+import { RangeSummary, TimeRange } from '../lib/dashboard-types';
 import { AiProductivityInsights } from '../components/ai-productivity-insights';
 import { StoryPointsChart } from '../components/story-points-chart';
 import { TodaysFocusList } from '../components/todays-focus-list';
 import { CompletedVsPlanned } from '../components/completed-vs-planned';
-import { WorkItemAging } from '../components/work-item-aging';
 import { PersonalVelocity } from '../components/personal-velocity';
 import { StandupHistory } from '../components/standup-history';
-import { WeeklySummary } from '../components/weekly-summary';
+import { SummaryDetails } from '../components/summary-details';
+import { DetailDrawer } from '../components/detail-drawer';
 
 export interface DashboardMetrics {
     storyPointsByMonth: { month: string; points: number }[];
@@ -18,17 +18,19 @@ export interface DashboardMetrics {
     plannedCount: number;
     completedPoints: number;
     plannedPoints: number;
-    agingItems: WorkItem[];
     focusItems: WorkItem[];
     currentSprint?: string;
     activeCount: number;
     blockedCount: number;
+    summaryByRange: Record<TimeRange, RangeSummary>;
 }
 
 export const PersonalDashboard: React.FC<{ allItems: WorkItem[] }> = ({ allItems }) => {
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
+    const selectedId = useStore((s) => s.selectedId);
+    const select = useStore((s) => s.select);
 
     useEffect(() => {
         void loadMetrics();
@@ -68,18 +70,14 @@ export const PersonalDashboard: React.FC<{ allItems: WorkItem[] }> = ({ allItems
             </div>
 
             {/* AI Components - Visually Prominent */}
-            <AiMotivation key={`motivation-${refreshKey}`} metrics={metrics} />
             <AiProductivityInsights key={`insights-${refreshKey}`} metrics={metrics} allItems={allItems} />
 
             {/* Main Dashboard Grid */}
             <div className="dashboard-grid">
-                {/* Row 1: Immediate Daily Focus */}
+                {/* Row 1: Immediate Daily Focus (full width Kanban) */}
                 <div className="dashboard-row row-1">
                     <div className="widget widget-focus-list">
                         <TodaysFocusList items={metrics?.focusItems || []} />
-                    </div>
-                    <div className="widget widget-weekly-summary">
-                        <WeeklySummary metrics={metrics} />
                     </div>
                 </div>
 
@@ -88,15 +86,15 @@ export const PersonalDashboard: React.FC<{ allItems: WorkItem[] }> = ({ allItems
                     <div className="widget widget-story-points">
                         <StoryPointsChart data={metrics?.storyPointsByMonth || []} />
                     </div>
-                    <div className="widget widget-completed-vs-planned">
-                        <CompletedVsPlanned metrics={metrics} />
+                    <div className="widget widget-summary-details">
+                        <SummaryDetails metrics={metrics} />
                     </div>
                 </div>
 
                 {/* Row 3: Risk and Momentum */}
                 <div className="dashboard-row row-3">
-                    <div className="widget widget-aging">
-                        <WorkItemAging items={metrics?.agingItems || []} />
+                    <div className="widget widget-completed-vs-planned">
+                        <CompletedVsPlanned metrics={metrics} />
                     </div>
                     <div className="widget widget-velocity">
                         <PersonalVelocity data={metrics?.velocity || []} />
@@ -106,6 +104,10 @@ export const PersonalDashboard: React.FC<{ allItems: WorkItem[] }> = ({ allItems
                     </div>
                 </div>
             </div>
+
+            {selectedId !== undefined && (
+                <DetailDrawer id={selectedId} onClose={() => select(undefined)} />
+            )}
         </div>
     );
 };

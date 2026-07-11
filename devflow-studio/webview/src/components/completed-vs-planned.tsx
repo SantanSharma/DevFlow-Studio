@@ -1,23 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { TimeRange, RangeSummary, TIME_RANGE_PERIODS } from '../lib/dashboard-types';
+import { TimeRangeSelect } from './time-range-select';
+import { InfoTooltip } from './info-tooltip';
 
 interface CompletedVsPlannedProps {
-    metrics: any;
+    metrics: {
+        completedCount?: number;
+        plannedCount?: number;
+        completedPoints?: number;
+        plannedPoints?: number;
+        summaryByRange?: Record<TimeRange, RangeSummary>;
+    } | null;
 }
 
 export const CompletedVsPlanned: React.FC<CompletedVsPlannedProps> = ({ metrics }) => {
-    const completed = metrics?.completedCount || 0;
-    const planned = metrics?.plannedCount || 0;
-    const completedPoints = metrics?.completedPoints || 0;
-    const plannedPoints = metrics?.plannedPoints || 0;
-    const remaining = planned - completed;
-    const remainingPoints = plannedPoints - completedPoints;
+    const [timeRange, setTimeRange] = useState<TimeRange>('monthly');
+
+    const summary = metrics?.summaryByRange?.[timeRange];
+    const completed = summary?.completedCount ?? metrics?.completedCount ?? 0;
+    const planned = summary?.plannedCount ?? metrics?.plannedCount ?? 0;
+    const completedPoints = summary?.completedPoints ?? metrics?.completedPoints ?? 0;
+    const plannedPoints = summary?.plannedPoints ?? metrics?.plannedPoints ?? 0;
+    const remaining = Math.max(planned - completed, 0);
+    const remainingPoints = Math.max(plannedPoints - completedPoints, 0);
     const percentage = planned > 0 ? Math.round((completed / planned) * 100) : 0;
 
     return (
         <div className="widget-content">
-            <h3>Completed vs Planned Work</h3>
+            <div className="widget-header">
+                <h3>
+                    Completed vs Planned Work
+                    <InfoTooltip
+                        description="Comparison between work items you completed and work items assigned to you in the selected time period. Completed = items closed (with a closed date); Planned = items assigned or worked on during the period."
+                        calculation="Filters your work items by the selected time range, then counts items and story points for completed vs planned. Percentage = (Completed / Planned) x 100."
+                        benefit="Track your delivery rate and capacity planning. A completion rate of 70-90% typically indicates good planning accuracy."
+                    />
+                </h3>
+                <TimeRangeSelect value={timeRange} onChange={setTimeRange} />
+            </div>
+            <div className="summary-period">Showing the {TIME_RANGE_PERIODS[timeRange]}</div>
             {planned === 0 ? (
-                <p className="empty-state">No planned work for the current period.</p>
+                <p className="empty-state">No planned work for the selected period.</p>
             ) : (
                 <div className="completion-stats">
                     <div className="progress-ring">

@@ -14,6 +14,7 @@ interface McpServer {
 interface SettingsState {
     adoMcpServerId?: string;
     adoProject?: string;
+    orgUrl?: string;
     pollIntervalSeconds?: number;
     standupWindowHours?: number;
     meEmail?: string;
@@ -103,6 +104,15 @@ export const Settings: React.FC = () => {
                     type="text"
                     defaultValue={settings.adoProject ?? ''}
                     onBlur={(e) => { void saveSetting('adoProject', e.target.value); }}
+                />
+            </div>
+            <div className="field">
+                <label>ADO organization URL (for &ldquo;Open in Azure DevOps&rdquo; links)</label>
+                <input
+                    type="text"
+                    placeholder="e.g. https://dev.azure.com/MyCompany"
+                    defaultValue={settings.orgUrl ?? ''}
+                    onBlur={(e) => { void saveSetting('adoOrgUrl', e.target.value.trim()); }}
                 />
             </div>
             <div className="field">

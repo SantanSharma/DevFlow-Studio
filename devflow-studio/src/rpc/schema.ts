@@ -200,11 +200,6 @@ export const RpcRequestSchema = z.discriminatedUnion("method", [
   }),
   z.object({
     id: z.string(),
-    method: z.literal("ai.generateMotivation"),
-    params: z.object({}).optional(),
-  }),
-  z.object({
-    id: z.string(),
     method: z.literal("ai.generateInsights"),
     params: z.object({}).optional(),
   }),

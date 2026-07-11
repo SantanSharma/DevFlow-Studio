@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { call } from '../lib/rpc';
 import { WorkItem } from '../state/store';
+import { InfoTooltip } from './info-tooltip';
 
 interface InsightsProps {
     metrics: any;
@@ -40,7 +41,14 @@ export const AiProductivityInsights: React.FC<InsightsProps> = ({ metrics, allIt
         <div className="ai-productivity-insights">
             <div className="ai-insights-icon">💡</div>
             <div className="ai-insights-content">
-                <h3>Productivity Insights</h3>
+                <h3>
+                    Productivity Insights
+                    <InfoTooltip
+                        description="AI-generated analysis of your recent work patterns and productivity metrics."
+                        calculation="A language model analyzes your completion rate, velocity, blocked items, and recent activity to generate actionable insights."
+                        benefit="Provides personalized recommendations, identifies bottlenecks, and highlights patterns you might miss."
+                    />
+                </h3>
                 {loading ? (
                     <div className="loading-text">Analyzing your work patterns...</div>
                 ) : (
