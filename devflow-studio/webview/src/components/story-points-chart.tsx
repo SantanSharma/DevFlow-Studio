@@ -1,4 +1,5 @@
 import React from 'react';
+import { InfoTooltip } from './info-tooltip';
 
 interface StoryPointsData {
     month: string;
@@ -19,7 +20,14 @@ export const StoryPointsChart: React.FC<{ data: StoryPointsData[] }> = ({ data }
 
     return (
         <div className="widget-content">
-            <h3>Story Points Completed (12 Months)</h3>
+            <h3>
+                Story Points Completed (12 Months)
+                <InfoTooltip
+                    description="Monthly trend chart showing story points from completed work items over the past 12 months."
+                    calculation="Sums story points from all work items closed in each month, grouped by the closed date."
+                    benefit="Visualize productivity trends, identify peak or slow periods, and track long-term capacity."
+                />
+            </h3>
             <div className="chart-container">
                 <div className="bar-chart">
                     {data.map((item, idx) => (

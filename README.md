@@ -1,6 +1,6 @@
 # DevFlow Studio
 
-![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)
 ![VS Code](https://img.shields.io/badge/VS%20Code-^1.95.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 

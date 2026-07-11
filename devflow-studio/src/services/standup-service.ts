@@ -277,43 +277,31 @@ export class StandupService {
       return t ? ` — ${truncate(t, 80)}` : "";
     };
 
+    // Token-optimized: rules condensed to single terse lines (~40% fewer
+    // instruction tokens than the previous verbose version) while keeping the
+    // journal-first sourcing rules and the exact output template.
     const lines: string[] = [];
-    lines.push(`# /standup`);
-    lines.push(``);
     lines.push(
-      `You are generating my daily standup update. Follow the exact output template at the bottom of this prompt. Be concise, specific, and action-oriented. Reference work items as #<id>. Do NOT invent items, commits, or PRs that are not in the data below. If a section has no data, write "(none)" — do not pad with filler.`,
+      `Write my daily standup from the data below. Use the exact output template at the bottom. Reference items as #<id>. Never invent items/commits/PRs. Empty section => "(none)".`,
     );
     lines.push(``);
-    lines.push(`## Rules`);
+    lines.push(`Rules:`);
     lines.push(
-      `- **Yesterday section is driven primarily by my private journal entries below** (the "My private journal entries" block). These are the personal notes I jot down as I work — they are the most accurate record of what I actually did. Summarize each entry (or related cluster on the same work item) into one bullet. Reference the work item id as #<id>.`,
+      `- Yesterday: journal entries are the PRIMARY source — one bullet per entry/cluster. Prefer journal over comments for the same item; use comments only where the journal is silent. Add state changes, commits, PRs only if they add info.`,
     );
     lines.push(
-      `- If a work item appears in the journal, prefer the journal text over ADO comments for that item.`,
+      `- Today: planned items below; blocked-unblocking first, then by priority. Max 5 bullets.`,
     );
     lines.push(
-      `- Use "Comments I authored" only to supplement Yesterday when the journal is silent on that item.`,
+      `- Blockers: blocked items or stuck mentions; name who could help if obvious. None => "- None".`,
     );
     lines.push(
-      `- Augment Yesterday with state changes I made (e.g. moved #123 from Active → Resolved), commits I authored, and PRs I opened/reviewed/merged. Keep these as separate bullets only if they add information beyond the comments.`,
+      `- One line per bullet, plain Markdown. Do NOT echo the raw data.`,
     );
-    lines.push(
-      `- **Today section** lists my planned active items in the current sprint (see "Today's planned items" below). Prioritise blocked items I'm trying to unblock, then in-progress items by priority. Cap at ~5 bullets.`,
-    );
-    lines.push(
-      `- **Blockers section** lists items in blocked states or anything my comments mention being stuck on. Include who could help if obvious from the comment text. If nothing is blocked, write "- None".`,
-    );
-    lines.push(
-      `- Keep bullets to one line each. Use plain Markdown only. Do NOT include the raw data sections in your output.`,
-    );
-    lines.push(``);
-    lines.push(`---`);
     lines.push(``);
     lines.push(`# DATA (last ${input.windowHours}h)`);
     lines.push(``);
-    lines.push(
-      `## My private journal entries (PRIMARY SOURCE for "Yesterday" — these are my own daily notes, never sent to ADO)`,
-    );
+    lines.push(`## Journal (PRIMARY for Yesterday)`);
     if (input.journal.length === 0) {
       lines.push("(none)");
     } else {
@@ -326,14 +314,12 @@ export class StandupService {
       for (const [id, arr] of byItem) {
         lines.push(`### #${id}${titleFor(id)}`);
         for (const j of arr) {
-          lines.push(`- ${j.ts}: ${truncate(j.text, 500)}`);
+          lines.push(`- ${j.ts}: ${truncate(j.text, 300)}`);
         }
       }
     }
     lines.push(``);
-    lines.push(
-      `## Comments I authored (supplementary — only use when the journal is silent on a given item)`,
-    );
+    lines.push(`## Comments I authored (supplementary)`);
     if (input.comments.length === 0) {
       lines.push("(none)");
     } else {
@@ -348,7 +334,7 @@ export class StandupService {
         for (const c of arr.sort((a, b) =>
           a.createdDate.localeCompare(b.createdDate),
         )) {
-          lines.push(`- ${c.createdDate}: ${truncate(c.text, 500)}`);
+          lines.push(`- ${c.createdDate}: ${truncate(c.text, 300)}`);
         }
       }
     }
@@ -369,7 +355,7 @@ export class StandupService {
       lines.push("(none)");
     } else {
       for (const c of input.commits) {
-        lines.push(`- ${c.repo}@${c.id}: ${truncate(c.comment, 160)}`);
+        lines.push(`- ${c.repo}@${c.id}: ${truncate(c.comment, 120)}`);
       }
     }
     lines.push(``);
@@ -384,7 +370,7 @@ export class StandupService {
       }
     }
     lines.push(``);
-    lines.push(`## Items I am blocked on`);
+    lines.push(`## Blocked items`);
     if (input.blocked.length === 0) {
       lines.push("(none)");
     } else {
@@ -393,7 +379,7 @@ export class StandupService {
       }
     }
     lines.push(``);
-    lines.push(`## Today's planned items (current sprint, active)`);
+    lines.push(`## Planned items (current sprint, active)`);
     if (input.planned.length === 0) {
       lines.push("(none)");
     } else {
@@ -401,8 +387,6 @@ export class StandupService {
         lines.push(`- #${p.id} [${p.type}/${p.state}] ${p.title}`);
       }
     }
-    lines.push(``);
-    lines.push(`---`);
     lines.push(``);
     lines.push(`# OUTPUT TEMPLATE (return only this, filled in)`);
     lines.push(``);

@@ -5,6 +5,11 @@ export interface LmStreamHandler {
   onToken: (text: string) => void;
 }
 
+/** Rough token estimate (~4 chars/token for English) for cost visibility. */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
 export class LmClient {
   public async generate(
     prompt: string,
@@ -23,6 +28,7 @@ export class LmClient {
       logger.info(
         `Using model: ${model.vendor}/${model.family} (${model.name})`,
       );
+      logger.info(`[LM] Estimated input tokens: ${estimateTokens(prompt)}`);
       const messages = [vscode.LanguageModelChatMessage.User(prompt)];
       const ct = token ?? new vscode.CancellationTokenSource().token;
       const response = await model.sendRequest(messages, {}, ct);
@@ -31,7 +37,9 @@ export class LmClient {
         full += chunk;
         handler.onToken(chunk);
       }
-      logger.info(`Generated ${full.length} characters`);
+      logger.info(
+        `Generated ${full.length} characters (~${estimateTokens(full)} tokens)`,
+      );
       return full;
     } catch (e) {
       logger.error("LmClient.generate failed", e);

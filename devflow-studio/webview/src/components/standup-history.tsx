@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { call } from '../lib/rpc';
+import { InfoTooltip } from './info-tooltip';
 
 interface Standup {
     date: string;
@@ -44,7 +45,14 @@ export const StandupHistory: React.FC = () => {
 
     return (
         <div className="widget-content">
-            <h3>Standup History</h3>
+            <h3>
+                Standup History
+                <InfoTooltip
+                    description="Log of your previously generated standup reports."
+                    calculation="Stores AI-generated standups based on work item activity in the time windows you specified."
+                    benefit="Quick reference for past standups; track what you reported and prepare for retrospectives."
+                />
+            </h3>
             {loading ? (
                 <div className="loading-text">Loading...</div>
             ) : standups.length === 0 ? (

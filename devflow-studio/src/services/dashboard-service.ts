@@ -2,6 +2,17 @@ import type { WorkItem } from "../rpc/schema";
 import type { LmClient } from "./lm-client";
 import { logger } from "../util/logger";
 
+export type TimeRange = "weekly" | "monthly" | "half-yearly" | "yearly";
+
+export interface RangeSummary {
+  completedCount: number;
+  completedPoints: number;
+  plannedCount: number;
+  plannedPoints: number;
+  activeCount: number;
+  blockedCount: number;
+}
+
 interface DashboardMetrics {
   storyPointsByMonth: { month: string; points: number }[];
   velocity: { period: string; points: number }[];
@@ -9,12 +20,21 @@ interface DashboardMetrics {
   plannedCount: number;
   completedPoints: number;
   plannedPoints: number;
-  agingItems: WorkItem[];
   focusItems: WorkItem[];
   currentSprint?: string;
   activeCount: number;
   blockedCount: number;
+  summaryByRange: Record<TimeRange, RangeSummary>;
 }
+
+const TIME_RANGE_DAYS: Record<TimeRange, number> = {
+  weekly: 7,
+  monthly: 30,
+  "half-yearly": 180,
+  yearly: 365,
+};
+
+const TIME_RANGES = Object.keys(TIME_RANGE_DAYS) as TimeRange[];
 
 interface DashboardFilters {
   dateRange: "current-sprint" | "last-30-days" | "last-90-days";
@@ -40,10 +60,10 @@ export class DashboardService {
   }
 
   private _getEffectiveClosedDate(item: WorkItem): string | undefined {
-    // Use closedDate if available, otherwise use changedDate for completed items
-    if (item.closedDate) return item.closedDate;
-    if (this._isCompleted(item.state)) return item.changedDate;
-    return undefined;
+    // Strictly use closedDate (Microsoft.VSTS.Common.ClosedDate). changedDate
+    // is NOT a valid fallback: it moves whenever any field changes (comments,
+    // tags), which would shift completed points to the wrong month.
+    return item.closedDate;
   }
 
   public async calculateMetrics(
@@ -66,9 +86,6 @@ export class DashboardService {
     const { completedCount, plannedCount, completedPoints, plannedPoints } =
       this._calculateCompletedVsPlanned(filteredItems);
 
-    // Find aging items (not changed in 7+ days and still active)
-    const agingItems = this._findAgingItems(filteredItems);
-
     // Get focus items for today - use ALL items, not filtered by date range
     // This ensures we see all active work items regardless of sprint
     const focusItems = this._getFocusItems(items);
@@ -86,6 +103,12 @@ export class DashboardService {
         item.tags.some((t) => t.toLowerCase().includes("block")),
     ).length;
 
+    // Pre-compute summaries for every supported time range so the webview can
+    // switch filters instantly without extra RPC round-trips.
+    const summaryByRange = Object.fromEntries(
+      TIME_RANGES.map((range) => [range, this._summarizeRange(items, range)]),
+    ) as Record<TimeRange, RangeSummary>;
+
     return {
       storyPointsByMonth,
       velocity,
@@ -93,47 +116,62 @@ export class DashboardService {
       plannedCount,
       completedPoints,
       plannedPoints,
-      agingItems,
       focusItems,
       currentSprint,
       activeCount,
       blockedCount,
+      summaryByRange,
     };
   }
 
-  public async generateMotivation(): Promise<string> {
-    const styles = [
-      "humor",
-      "sarcasm",
-      "inspiration",
-      "challenge",
-      "practical",
-      "urgency",
-    ];
-    const style = styles[Math.floor(Math.random() * styles.length)];
+  /**
+   * Summarizes activity for a time range:
+   * - Completed: items with a real closedDate inside the range.
+   * - Planned: items touched (changed/created) inside the range, excluding removed ones.
+   * - Active/Blocked: current-state counts among items touched inside the range.
+   */
+  private _summarizeRange(items: WorkItem[], range: TimeRange): RangeSummary {
+    const cutoff = Date.now() - TIME_RANGE_DAYS[range] * 24 * 60 * 60 * 1000;
+    const inRange = (iso?: string): boolean =>
+      !!iso && new Date(iso).getTime() >= cutoff;
 
-    const prompt = `Generate a single, concise motivational sentence for a developer starting their day. 
-Use a ${style} tone. Keep it under 25 words. Be specific and actionable, not generic. 
-Avoid corporate language. Make it feel personal and direct.`;
-
-    let motivation = "";
-    await this._lm.generate(
-      prompt,
-      {
-        onToken: (text) => {
-          motivation += text;
-        },
-      },
-      undefined,
+    const completed = items.filter(
+      (item) => this._isCompleted(item.state) && inRange(item.closedDate),
+    );
+    const touched = items.filter(
+      (item) =>
+        inRange(item.changedDate ?? item.createdDate) ||
+        inRange(item.closedDate),
+    );
+    const planned = touched.filter(
+      (item) => item.state !== "Removed" && item.state !== "Deleted",
+    );
+    const active = touched.filter(
+      (item) =>
+        item.state === "Active" ||
+        item.state === "In Progress" ||
+        item.state === "In Development",
+    );
+    const blocked = touched.filter(
+      (item) =>
+        item.state.toLowerCase().includes("block") ||
+        item.tags.some((t) => t.toLowerCase().includes("block")),
     );
 
-    return motivation.trim();
+    const sumPoints = (list: WorkItem[]): number =>
+      list.reduce((sum, item) => sum + (item.storyPoints || 0), 0);
+
+    return {
+      completedCount: completed.length,
+      completedPoints: sumPoints(completed),
+      plannedCount: planned.length,
+      plannedPoints: sumPoints(planned),
+      activeCount: active.length,
+      blockedCount: blocked.length,
+    };
   }
 
-  public async generateInsights(
-    metrics: DashboardMetrics,
-    recentItems: WorkItem[],
-  ): Promise<string> {
+  public async generateInsights(metrics: DashboardMetrics): Promise<string> {
     const formats = [
       "numbered list",
       "bullet points",
@@ -143,20 +181,17 @@ Avoid corporate language. Make it feel personal and direct.`;
       "action-focused",
     ];
     const format = formats[Math.floor(Math.random() * formats.length)];
+    const recentVelocity =
+      metrics.velocity.length > 0
+        ? metrics.velocity[metrics.velocity.length - 1].points
+        : 0;
 
-    const prompt = `Analyze this developer's work data and provide 2-4 specific, actionable productivity insights.
-
-Data:
-- Completed: ${metrics.completedCount} items (${metrics.completedPoints} story points)
-- Planned: ${metrics.plannedCount} items (${metrics.plannedPoints} story points)
-- Aging items: ${metrics.agingItems.length}
-- Recent velocity: ${metrics.velocity.length > 0 ? metrics.velocity[metrics.velocity.length - 1].points : 0} points
-
-Format: Use a ${format} style.
-Tone: Helpful and analytical, not judgmental.
-Length: 60-150 words.
-Focus: Specific observations about patterns, trends, and concrete recommendations.
-Avoid: Generic advice. Be specific to this data.`;
+    // Token-optimized prompt (~50 tokens vs ~200 for the previous verbose
+    // version): only the essential metric summary plus tight constraints.
+    const prompt = `Dev productivity insights (${format}, 60-100 words):
+Done: ${metrics.completedCount}/${metrics.plannedCount} items (${metrics.completedPoints}/${metrics.plannedPoints}pts)
+Blocked: ${metrics.blockedCount} | Velocity: ${recentVelocity}pts/wk
+Give 2-4 specific, actionable observations from this data. No generic advice.`;
 
     let insights = "";
     await this._lm.generate(
@@ -273,25 +308,6 @@ Avoid: Generic advice. Be specific to this data.`;
       .reduce((sum, item) => sum + (item.storyPoints || 0), 0);
 
     return { completedCount, plannedCount, completedPoints, plannedPoints };
-  }
-
-  private _findAgingItems(items: WorkItem[]): WorkItem[] {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    return items
-      .filter((item) => {
-        if (this._isCompleted(item.state)) return false;
-        if (!item.changedDate) return false;
-        const changed = new Date(item.changedDate);
-        return changed < sevenDaysAgo;
-      })
-      .sort((a, b) => {
-        const dateA = a.changedDate ? new Date(a.changedDate).getTime() : 0;
-        const dateB = b.changedDate ? new Date(b.changedDate).getTime() : 0;
-        return dateA - dateB;
-      });
   }
 
   private _getFocusItems(items: WorkItem[]): WorkItem[] {

@@ -56,6 +56,33 @@ export class RpcBridge {
     this._post(event);
   }
 
+  /**
+   * Normalizes the configured Azure DevOps organization URL. Returns undefined
+   * when nothing usable is configured so the UI can hide "Open in Azure DevOps"
+   * links instead of pointing at a placeholder organization.
+   */
+  private _resolveOrgUrl(configured?: string): string | undefined {
+    const raw = configured?.trim();
+    if (!raw) {
+      return undefined;
+    }
+    // Extract the organization from a dev.azure.com URL, tolerating extra
+    // path segments and trailing slashes.
+    const match = raw.match(/dev\.azure\.com\/([^/\s?#]+)/i);
+    if (match) {
+      return `https://dev.azure.com/${match[1]}`;
+    }
+    // On-prem / visualstudio.com style URLs: use as-is without trailing slash.
+    if (/^https?:\/\//i.test(raw)) {
+      return raw.replace(/\/+$/, "");
+    }
+    // Bare organization name, e.g. "MyCompany".
+    if (/^[\w-]+$/.test(raw)) {
+      return `https://dev.azure.com/${raw}`;
+    }
+    return undefined;
+  }
+
   private async _dispatch(req: RpcRequest): Promise<unknown> {
     switch (req.method) {
       case "workItems.list": {
@@ -107,9 +134,7 @@ export class RpcBridge {
           adoMcpServerId: cfg.get("adoMcpServerId"),
           adoProject: cfg.get("adoProject"),
           project: cfg.get<string>("adoProject") ?? "",
-          orgUrl:
-            cfg.get<string>("adoOrgUrl") ??
-            "https://dev.azure.com/YourOrganization",
+          orgUrl: this._resolveOrgUrl(cfg.get<string>("adoOrgUrl")),
           pollIntervalSeconds: cfg.get("pollIntervalSeconds"),
           standupWindowHours: cfg.get("standupWindowHours"),
           meEmail: cfg.get<string>("meEmail") ?? "",
@@ -163,15 +188,6 @@ export class RpcBridge {
         });
         return result;
       }
-      case "ai.generateMotivation": {
-        try {
-          const message = await this._dashboard.generateMotivation();
-          return { message };
-        } catch (e) {
-          logger.error("[RPC] ai.generateMotivation failed:", e);
-          throw e;
-        }
-      }
       case "ai.generateInsights": {
         try {
           const items = await this._ado.listMyWorkItems({ refresh: false });
@@ -180,10 +196,7 @@ export class RpcBridge {
             workItemTypes: [],
             states: [],
           });
-          const insights = await this._dashboard.generateInsights(
-            metrics,
-            items.slice(0, 50),
-          );
+          const insights = await this._dashboard.generateInsights(metrics);
           return { insights };
         } catch (e) {
           logger.error("[RPC] ai.generateInsights failed:", e);

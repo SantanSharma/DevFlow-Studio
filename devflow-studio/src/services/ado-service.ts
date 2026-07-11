@@ -20,6 +20,7 @@ interface BatchWorkItemFields {
   "System.Tags"?: string;
   "System.ChangedDate"?: string;
   "System.CreatedDate"?: string;
+  "Microsoft.VSTS.Common.ClosedDate"?: string;
   "Microsoft.VSTS.Common.Priority"?: number;
   "System.Parent"?: number;
   [key: string]: unknown;

@@ -2,7 +2,7 @@
   "name": "devflow-studio",
   "displayName": "DevFlow Studio",
   "description": "AI-powered Azure DevOps dashboard with smart standup generation and personal journal",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "SantanSharma",
   "license": "MIT",
   "categories": [
@@ -74,6 +74,12 @@
           "scope": "application",
           "default": "",
           "description": "Default Azure DevOps project name used for work item batch fetches."
+        },
+        "devflowStudio.adoOrgUrl": {
+          "type": "string",
+          "scope": "application",
+          "default": "",
+          "description": "Your Azure DevOps organization URL, e.g. https://dev.azure.com/MyCompany. Used to build 'Open in Azure DevOps' links. Leave empty to hide those links."
         },
         "devflowStudio.pollIntervalSeconds": {
           "type": "number",
