@@ -12,6 +12,11 @@ import {
   type RpcEvent,
 } from "./schema";
 import { logger } from "../util/logger";
+import {
+  getKanbanColumns,
+  getWorkflowCategories,
+} from "../util/workflow-categories";
+import { getCompletedStates } from "../util/completed-states";
 
 const ONBOARDING_KEY = "devflowStudio.onboarded";
 
@@ -139,6 +144,13 @@ export class RpcBridge {
           standupWindowHours: cfg.get("standupWindowHours"),
           meEmail: cfg.get<string>("meEmail") ?? "",
           meDisplayName: cfg.get<string>("meDisplayName") ?? "",
+          workflowCategories: getWorkflowCategories(),
+          kanbanColumns: getKanbanColumns(),
+          // Raw configured values (not lowercased) so the settings UI can
+          // render and edit them as the user wrote them.
+          completedStates:
+            cfg.get<string[]>("completedStates") ??
+            Array.from(getCompletedStates()),
         };
       }
       case "settings.set":
@@ -174,9 +186,16 @@ export class RpcBridge {
       case "onboarding.complete":
         await this._context.globalState.update(ONBOARDING_KEY, true);
         return { ok: true };
-      case "system.openExternal":
-        await vscode.env.openExternal(vscode.Uri.parse(req.params.url));
+      case "system.openExternal": {
+        // Only allow web URLs; blocks command:, file:, vscode: and other
+        // privileged schemes from being launched via webview messages.
+        const uri = vscode.Uri.parse(req.params.url);
+        if (uri.scheme !== "https" && uri.scheme !== "http") {
+          throw new Error(`Blocked non-web URL scheme: ${uri.scheme}`);
+        }
+        await vscode.env.openExternal(uri);
         return { ok: true };
+      }
       case "diag.run":
         return this._ado.diagnose();
       case "dashboard.metrics": {
