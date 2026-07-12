@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useStore, applyView, applyFilters } from './state/store';
+import { useStore, applyView, applyFilters, type ViewId, type WorkItem } from './state/store';
 import { PersonalDashboard } from './routes/personal-dashboard';
 import { Dashboard } from './routes/dashboard';
 import { StandupPanel } from './routes/standup';
 import { Settings } from './routes/settings';
 import { Onboarding } from './components/onboarding';
+import { WorkItemsDrawer } from './components/work-items-drawer';
 import { call } from './lib/rpc';
 
 type Tab = 'overview' | 'work-items' | 'standup' | 'settings';
@@ -45,10 +46,24 @@ export const App: React.FC = () => {
         })();
     }, []);
 
+    const openDrawer = useStore((s) => s.openWorkItemsDrawer);
+    const workflowCategories = useStore((s) => s.workflowCategories);
+
     const filtered = useMemo(
         () => applyFilters(applyView(items, view, notes, worked), filters),
         [items, view, filters, notes, worked],
     );
+
+    // One computation point for the sidebar counts and their drawer contents;
+    // deliberately excludes `filters` (counts are pre-filter by design) and
+    // `view`. workflowCategories is a dependency because applyView derives its
+    // blocked/resolved sets from the configured categories.
+    const viewItems = useMemo(() => {
+        const ids: ViewId[] = ['active', 'today', 'blocked', 'sprint', 'todo', 'worked', 'all', 'resolved'];
+        return Object.fromEntries(
+            ids.map((id) => [id, applyView(items, id, notes, worked)]),
+        ) as Record<ViewId, WorkItem[]>;
+    }, [items, notes, worked, workflowCategories]);
 
     return (
         <div className="app">
@@ -101,7 +116,32 @@ export const App: React.FC = () => {
                         onClick={() => { setView(id); setTab('work-items'); }}
                     >
                         <span>{label}</span>
-                        <span>{applyView(items, id, notes, worked).length}</span>
+                        <span
+                            className="view-count metric-clickable"
+                            role="button"
+                            tabIndex={0}
+                            title={`List '${label}' items without leaving this page`}
+                            onClick={(e) => {
+                                // Badge opens the drawer; the row click (navigate) must not fire.
+                                e.stopPropagation();
+                                openDrawer({
+                                    title: label,
+                                    items: viewItems[id],
+                                    sourceDescription: `Items matching the '${label}' view.`,
+                                });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    openDrawer({
+                                        title: label,
+                                        items: viewItems[id],
+                                        sourceDescription: `Items matching the '${label}' view.`,
+                                    });
+                                }
+                            }}
+                        >{viewItems[id].length}</span>
                     </div>
                 ))}
 
@@ -141,6 +181,7 @@ export const App: React.FC = () => {
             </main>
 
             {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
+            <WorkItemsDrawer />
         </div>
     );
 };

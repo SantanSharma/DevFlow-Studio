@@ -2,7 +2,7 @@
   "name": "devflow-studio",
   "displayName": "DevFlow Studio",
   "description": "AI-powered Azure DevOps dashboard with smart standup generation and personal journal",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "SantanSharma",
   "license": "MIT",
   "categories": [
@@ -119,6 +119,83 @@
           "scope": "application",
           "default": "",
           "description": "Optional saved ADO query ID (GUID) or path (e.g. 'My Queries/SS-WorkItems'). When set, the dashboard uses this query as the single source of truth for assigned work items, executing it fresh on every refresh. All dashboard views filter this result set client-side."
+        },
+        "devflowStudio.workflowCategories": {
+          "type": "array",
+          "scope": "application",
+          "default": [
+            {
+              "key": "new",
+              "label": "New",
+              "states": ["New", "Proposed", "To Do", "Triage"]
+            },
+            {
+              "key": "readyForDev",
+              "label": "Ready for Development",
+              "states": ["Ready for Dev", "Ready to Retire/Estimate", "Committed"]
+            },
+            {
+              "key": "inDev",
+              "label": "In Development",
+              "states": ["In Development", "Active", "In Progress", "Code Review"]
+            },
+            {
+              "key": "qa",
+              "label": "QA",
+              "states": ["Ready for QA", "In QA", "Ready for Test", "In Test", "Dev and QA Closed"]
+            },
+            {
+              "key": "blocked",
+              "label": "Blocked",
+              "states": ["Blocked", "On Hold", "Redbin/Blocked"]
+            },
+            {
+              "key": "completed",
+              "label": "Completed",
+              "states": ["Closed", "Resolved", "Done", "Dev Complete"]
+            }
+          ],
+          "items": {
+            "type": "object",
+            "required": ["key", "label", "states"],
+            "properties": {
+              "key": { "type": "string" },
+              "label": { "type": "string" },
+              "states": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "description": "Ordered mapping of workflow categories to Azure DevOps states. Matching is case-insensitive; first matching category wins; unmatched states fall into 'Other'. Drives the Summary donut, dashboard counters, and view filters. Note: date-based completion metrics (story points chart, velocity) use devflowStudio.completedStates instead."
+        },
+        "devflowStudio.kanbanColumns": {
+          "type": "array",
+          "scope": "application",
+          "default": [
+            {
+              "title": "New",
+              "states": ["New", "Proposed", "To Do", "Triage"]
+            },
+            {
+              "title": "Ready for Development",
+              "states": ["Ready for Dev", "Ready to Retire/Estimate"]
+            },
+            {
+              "title": "In Development",
+              "states": ["In Development", "Active", "In Progress", "Code Review"]
+            },
+            {
+              "title": "QA",
+              "states": ["Dev and QA Closed", "Ready for QA", "In QA", "Ready for Test"]
+            }
+          ],
+          "items": {
+            "type": "object",
+            "required": ["title", "states"],
+            "properties": {
+              "title": { "type": "string" },
+              "states": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "description": "Ordered Kanban columns for the dashboard focus board and the work items Kanban view. Each column lists the ADO states it displays; array order is display order. Configure these to match your Azure DevOps process."
         },
         "devflowStudio.completedStates": {
           "type": "array",

@@ -357,12 +357,14 @@ input[type="text"], input[type="number"], textarea {
 .multi-dd-trigger { display: inline-flex; align-items: center; gap: 6px; min-width: 140px; padding: 3px 8px; font-size: 12px; background: var(--vscode-dropdown-background, var(--vscode-input-background)); color: var(--vscode-dropdown-foreground, var(--vscode-input-foreground)); border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border, #555)); border-radius: 3px; cursor: pointer; text-align: left; justify-content: space-between; }
 .multi-dd-trigger:hover { border-color: var(--vscode-focusBorder); }
 .multi-dd-caret { opacity: 0.7; font-size: 10px; }
-.multi-dd-menu { position: absolute; top: 100%; left: 0; margin-top: 2px; min-width: 200px; max-height: 280px; overflow-y: auto; background: var(--vscode-dropdown-background, var(--vscode-editor-background)); border: 1px solid var(--vscode-dropdown-border, var(--vscode-focusBorder, #555)); border-radius: 3px; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.3); padding: 4px 0; }
+.multi-dd-menu { position: absolute; top: 100%; left: 0; margin-top: 2px; min-width: 260px; max-width: 340px; max-height: 280px; overflow-y: auto; background: var(--vscode-dropdown-background, var(--vscode-editor-background)); border: 1px solid var(--vscode-dropdown-border, var(--vscode-focusBorder, #555)); border-radius: 3px; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.3); padding: 4px 0; }
 .multi-dd-actions { display: flex; gap: 4px; padding: 2px 8px 6px; border-bottom: 1px solid var(--vscode-panel-border, #333); margin-bottom: 4px; }
 .multi-dd-actions button { font-size: 10px; padding: 2px 8px; }
-.multi-dd-option { display: flex; align-items: center; gap: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+.multi-dd-option { display: flex; align-items: center; gap: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
 .multi-dd-option:hover { background: var(--vscode-list-hoverBackground); }
-.multi-dd-option input { margin: 0; }
+/* width/flex overrides guard against broad rules like `.settings input { width: 100%; }` */
+.multi-dd-option input { margin: 0; width: auto; flex: 0 0 auto; }
+.multi-dd-option span { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== PERSONAL DASHBOARD STYLES ===== */
 
@@ -500,7 +502,7 @@ input[type="text"], input[type="number"], textarea {
 }
 
 .dashboard-row.row-2 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 2fr 1fr; /* 8/4 of a 12-col grid: story points | summary donut */
 }
 
 .dashboard-row.row-3 {
@@ -816,27 +818,6 @@ input[type="text"], input[type="number"], textarea {
     margin-bottom: 12px;
 }
 
-.summary-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-}
-
-.summary-item {
-    text-align: center;
-}
-
-.summary-value {
-    font-size: 32px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.summary-label {
-    font-size: 11px;
-    opacity: 0.7;
-}
-
 /* Standup History */
 
 .standup-list {
@@ -964,4 +945,299 @@ input[type="text"], input[type="number"], textarea {
     .dashboard-row.row-2 {
         grid-template-columns: 1fr;
     }
+}
+
+/* ===== Phase 2: Universal Work Items Drawer ===== */
+
+.wi-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 19;
+}
+
+.wi-drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    display: flex;
+    width: 400px;
+    background: var(--vscode-editor-background);
+    border-left: 1px solid var(--vscode-panel-border, #333);
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.3);
+    z-index: 20; /* above the legacy .drawer (z-index: 10) */
+}
+
+.wi-drawer.with-detail {
+    width: 880px;
+    max-width: 95vw;
+}
+
+.wi-drawer-list {
+    display: flex;
+    flex-direction: column;
+    width: 400px;
+    min-width: 280px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--vscode-panel-border, #333);
+}
+
+.wi-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--vscode-panel-border, #333);
+}
+
+.wi-drawer-titles { flex: 1; min-width: 0; }
+.wi-drawer-header h3 { margin: 0; font-size: 14px; }
+
+.wi-drawer-source {
+    margin: 4px 0 0;
+    font-size: 11px;
+    opacity: 0.65;
+    line-height: 1.4;
+}
+
+.wi-drawer-header .close {
+    cursor: pointer;
+    opacity: 0.8;
+    font-size: 14px;
+    padding: 2px 4px;
+}
+.wi-drawer-header .close:hover { opacity: 1; }
+
+.wi-drawer-cards {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wi-drawer-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    min-width: 0;
+}
+
+.focus-card.selected {
+    border-color: var(--vscode-focusBorder, #007acc);
+    background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.15));
+}
+
+@media (max-width: 1000px) {
+    .wi-drawer.with-detail { width: 95vw; }
+    .wi-drawer.with-detail .wi-drawer-list { display: none; }
+}
+
+/* ===== Phase 2: clickable metrics ===== */
+
+.metric-clickable {
+    cursor: pointer;
+}
+
+.metric-clickable:hover {
+    text-decoration: underline;
+    opacity: 1;
+}
+
+.metric-clickable:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder, #007acc);
+    outline-offset: 2px;
+}
+
+.my-day .card.metric-clickable:hover {
+    text-decoration: none;
+    border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.my-day-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bar-item.metric-clickable:hover {
+    text-decoration: none;
+    background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+    border-radius: 4px;
+}
+
+.progress-ring.metric-clickable:hover,
+.stat-item.metric-clickable:hover {
+    text-decoration: none;
+}
+
+.stat-item.metric-clickable:hover .stat-value {
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.view .view-count:hover {
+    color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.velocity-dot {
+    cursor: pointer;
+}
+
+.velocity-dot:hover {
+    r: 5;
+}
+
+.chart-label.metric-clickable {
+    white-space: nowrap;
+}
+
+/* ===== Phase 2: Summary Details donut ===== */
+
+.donut-chart {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.donut-svg {
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+}
+
+.donut-segment {
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.donut-segment:hover {
+    opacity: 0.8;
+    stroke-width: 18;
+}
+
+.donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+}
+
+.legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.legend-row:hover {
+    background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+    text-decoration: none;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.legend-count {
+    opacity: 0.7;
+    white-space: nowrap;
+    font-size: 11px;
+}
+
+/* ===== Phase 2: Settings tabs and editors ===== */
+
+.settings-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--vscode-panel-border, #333);
+    margin-bottom: 16px;
+}
+
+.settings-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--vscode-foreground);
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    opacity: 0.75;
+}
+
+.settings-tab:hover {
+    opacity: 1;
+}
+
+.settings-tab.active {
+    border-bottom-color: var(--vscode-focusBorder, #007acc);
+    font-weight: 600;
+    opacity: 1;
+}
+
+.settings-warning {
+    font-size: 11px;
+    color: var(--vscode-editorWarning-foreground, #cca700);
+    margin: 4px 0;
+}
+
+.column-editor-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+/* .settings scope needed to beat `.settings input { width: 100%; }` */
+.settings .column-editor-row .column-title-input {
+    width: 220px;
+    flex: 0 0 auto;
+}
+
+.state-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.state-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border: 1px solid var(--vscode-panel-border, #333);
+    border-radius: 10px;
+    font-size: 11px;
+    background: var(--vscode-badge-background, rgba(255, 255, 255, 0.06));
+    color: var(--vscode-badge-foreground, inherit);
+}
+
+.state-chip-remove {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.state-chip-remove:hover {
+    opacity: 1;
 }

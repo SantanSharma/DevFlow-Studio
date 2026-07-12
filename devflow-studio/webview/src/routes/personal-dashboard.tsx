@@ -12,8 +12,8 @@ import { SummaryDetails } from '../components/summary-details';
 import { DetailDrawer } from '../components/detail-drawer';
 
 export interface DashboardMetrics {
-    storyPointsByMonth: { month: string; points: number }[];
-    velocity: { period: string; points: number }[];
+    storyPointsByMonth: { month: string; points: number; itemIds: number[] }[];
+    velocity: { period: string; points: number; itemIds: number[] }[];
     completedCount: number;
     plannedCount: number;
     completedPoints: number;
@@ -87,7 +87,7 @@ export const PersonalDashboard: React.FC<{ allItems: WorkItem[] }> = ({ allItems
                         <StoryPointsChart data={metrics?.storyPointsByMonth || []} />
                     </div>
                     <div className="widget widget-summary-details">
-                        <SummaryDetails metrics={metrics} />
+                        <SummaryDetails />
                     </div>
                 </div>
 

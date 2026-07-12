@@ -1,12 +1,19 @@
 import React from 'react';
 import { InfoTooltip } from './info-tooltip';
+import { useStore } from '../state/store';
+import { resolveItems } from '../lib/workflow-categories';
+import { metricKeyHandler } from '../lib/use-metric-click';
 
 interface VelocityData {
     period: string;
     points: number;
+    itemIds: number[];
 }
 
 export const PersonalVelocity: React.FC<{ data: VelocityData[] }> = ({ data }) => {
+    const items = useStore((s) => s.items);
+    const openDrawer = useStore((s) => s.openWorkItemsDrawer);
+
     if (!data || data.length === 0) {
         return (
             <div className="widget-content">
@@ -19,14 +26,23 @@ export const PersonalVelocity: React.FC<{ data: VelocityData[] }> = ({ data }) =
     const maxPoints = Math.max(...data.map(d => d.points), 1);
     const avgPoints = data.reduce((sum, d) => sum + d.points, 0) / data.length;
 
+    const openWeek = (d: VelocityData): void => {
+        const ids = d.itemIds ?? [];
+        openDrawer({
+            title: `Velocity ${d.period}`,
+            sourceDescription: `${d.points} story points from items closed in this week, per your configured completed states.`,
+            items: resolveItems(ids, items),
+        });
+    };
+
     return (
         <div className="widget-content">
             <h3>
                 Personal Velocity
                 <InfoTooltip
                     description="Story points completed over recent weekly periods."
-                    calculation="Tracks story points from items closed each week over the last 4 weeks, based on the closed date."
-                    benefit="Helps with sprint planning, capacity forecasting, and identifying velocity trends."
+                    calculation="Tracks story points from items closed each week over the last 4 weeks, based on the closed date and the completed states you configure in Settings → Dashboard Configuration."
+                    benefit="Helps with sprint planning, capacity forecasting, and identifying velocity trends. Click a week label to see the items closed that week."
                 />
             </h3>
             <div className="velocity-summary">
@@ -41,7 +57,7 @@ export const PersonalVelocity: React.FC<{ data: VelocityData[] }> = ({ data }) =
                         fill="none"
                         stroke="var(--vscode-charts-blue)"
                         strokeWidth="2"
-                        points={data.map((d, i) => 
+                        points={data.map((d, i) =>
                             `${(i / (data.length - 1)) * 280 + 10},${90 - (d.points / maxPoints) * 70}`
                         ).join(' ')}
                     />
@@ -50,14 +66,27 @@ export const PersonalVelocity: React.FC<{ data: VelocityData[] }> = ({ data }) =
                             key={i}
                             cx={(i / (data.length - 1)) * 280 + 10}
                             cy={90 - (d.points / maxPoints) * 70}
-                            r="3"
+                            r="4"
                             fill="var(--vscode-charts-blue)"
-                        />
+                            className="velocity-dot"
+                            onClick={() => openWeek(d)}
+                        >
+                            <title>{`${d.period}: ${d.points} points`}</title>
+                        </circle>
                     ))}
                 </svg>
                 <div className="chart-labels">
                     {data.map((d, i) => (
-                        <span key={i} className="chart-label">{d.period}</span>
+                        <span
+                            key={i}
+                            className="chart-label metric-clickable"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openWeek(d)}
+                            onKeyDown={metricKeyHandler(() => openWeek(d))}
+                        >
+                            {d.period} · {d.points}
+                        </span>
                     ))}
                 </div>
             </div>

@@ -17,3 +17,6 @@ tsconfig.json
 **/*.vsix
 !dist/**
 !webview/dist/**
+ProjectKnowledgeDocs/**
+images/**
+!images/icon.png

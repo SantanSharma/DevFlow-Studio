@@ -1,6 +1,11 @@
 import type { WorkItem } from "../rpc/schema";
 import type { LmClient } from "./lm-client";
 import { isCompletedState } from "../util/completed-states";
+import {
+  getWorkflowCategories,
+  categoryStateSet,
+  normalizeState,
+} from "../util/workflow-categories";
 
 export type TimeRange = "weekly" | "monthly" | "half-yearly" | "yearly";
 
@@ -11,11 +16,17 @@ export interface RangeSummary {
   plannedPoints: number;
   activeCount: number;
   blockedCount: number;
+  // Item ids backing each count, so the webview can open the universal
+  // work items drawer with the exact underlying items.
+  completedIds: number[];
+  plannedIds: number[];
+  activeIds: number[];
+  blockedIds: number[];
 }
 
 interface DashboardMetrics {
-  storyPointsByMonth: { month: string; points: number }[];
-  velocity: { period: string; points: number }[];
+  storyPointsByMonth: { month: string; points: number; itemIds: number[] }[];
+  velocity: { period: string; points: number; itemIds: number[] }[];
   completedCount: number;
   plannedCount: number;
   completedPoints: number;
@@ -83,17 +94,15 @@ export class DashboardService {
     // This ensures we see all active work items regardless of sprint
     const focusItems = this._getFocusItems(items);
 
-    // Calculate active and blocked counts
-    const activeCount = items.filter(
-      (item) =>
-        item.state === "Active" ||
-        item.state === "In Progress" ||
-        item.state === "In Development",
+    // Calculate active and blocked counts from the configured workflow
+    // categories (devflowStudio.workflowCategories) instead of hardcoded names.
+    const categories = getWorkflowCategories();
+    const activeStates = categoryStateSet(categories, ["inDev"]);
+    const activeCount = items.filter((item) =>
+      activeStates.has(normalizeState(item.state)),
     ).length;
-    const blockedCount = items.filter(
-      (item) =>
-        item.state.toLowerCase().includes("block") ||
-        item.tags.some((t) => t.toLowerCase().includes("block")),
+    const blockedCount = items.filter((item) =>
+      this._isBlocked(item, categoryStateSet(categories, ["blocked"])),
     ).length;
 
     // Pre-compute summaries for every supported time range so the webview can
@@ -117,16 +126,32 @@ export class DashboardService {
     };
   }
 
+  /** Blocked = state in the blocked category, or blocking signalled by state/tag text. */
+  private _isBlocked(item: WorkItem, blockedStates: Set<string>): boolean {
+    return (
+      blockedStates.has(normalizeState(item.state)) ||
+      item.state.toLowerCase().includes("block") ||
+      item.tags.some((t) => t.toLowerCase().includes("block"))
+    );
+  }
+
   /**
    * Summarizes activity for a time range:
-   * - Completed: items with a real closedDate inside the range.
+   * - Completed: items in a configured completed state (devflowStudio.completedStates)
+   *   with a real closedDate inside the range. closedDate is revision-resolved
+   *   upstream for custom states, so this respects the configured states end-to-end.
    * - Planned: items touched (changed/created) inside the range, excluding removed ones.
-   * - Active/Blocked: current-state counts among items touched inside the range.
+   * - Active/Blocked: current-state counts among items touched inside the range,
+   *   using the configured workflow categories.
    */
   private _summarizeRange(items: WorkItem[], range: TimeRange): RangeSummary {
     const cutoff = Date.now() - TIME_RANGE_DAYS[range] * 24 * 60 * 60 * 1000;
     const inRange = (iso?: string): boolean =>
       !!iso && new Date(iso).getTime() >= cutoff;
+
+    const categories = getWorkflowCategories();
+    const activeStates = categoryStateSet(categories, ["inDev"]);
+    const blockedStates = categoryStateSet(categories, ["blocked"]);
 
     const completed = items.filter(
       (item) => this._isCompleted(item.state) && inRange(item.closedDate),
@@ -139,20 +164,16 @@ export class DashboardService {
     const planned = touched.filter(
       (item) => item.state !== "Removed" && item.state !== "Deleted",
     );
-    const active = touched.filter(
-      (item) =>
-        item.state === "Active" ||
-        item.state === "In Progress" ||
-        item.state === "In Development",
+    const active = touched.filter((item) =>
+      activeStates.has(normalizeState(item.state)),
     );
-    const blocked = touched.filter(
-      (item) =>
-        item.state.toLowerCase().includes("block") ||
-        item.tags.some((t) => t.toLowerCase().includes("block")),
+    const blocked = touched.filter((item) =>
+      this._isBlocked(item, blockedStates),
     );
 
     const sumPoints = (list: WorkItem[]): number =>
       list.reduce((sum, item) => sum + (item.storyPoints || 0), 0);
+    const ids = (list: WorkItem[]): number[] => list.map((item) => item.id);
 
     return {
       completedCount: completed.length,
@@ -161,6 +182,10 @@ export class DashboardService {
       plannedPoints: sumPoints(planned),
       activeCount: active.length,
       blockedCount: blocked.length,
+      completedIds: ids(completed),
+      plannedIds: ids(planned),
+      activeIds: ids(active),
+      blockedIds: ids(blocked),
     };
   }
 
@@ -202,9 +227,10 @@ Give 2-4 specific, actionable observations from this data. No generic advice.`;
 
   private _calculateStoryPointsByMonth(
     items: WorkItem[],
-  ): { month: string; points: number }[] {
+  ): { month: string; points: number; itemIds: number[] }[] {
     const now = new Date();
-    const monthsData: { month: string; points: number }[] = [];
+    const monthsData: { month: string; points: number; itemIds: number[] }[] =
+      [];
 
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -217,19 +243,28 @@ Give 2-4 specific, actionable observations from this data. No generic advice.`;
       // Never derive the bucket key via toISOString(): local midnight on the
       // 1st converts to the previous month in UTC+ timezones, which shifted
       // every bucket back a month and dropped current-month closures entirely.
-      const points = items
-        .filter((item) => {
-          const effectiveClosedDate = this._getEffectiveClosedDate(item);
-          if (!effectiveClosedDate) return false;
-          const closed = new Date(effectiveClosedDate);
-          return (
-            closed.getFullYear() === date.getFullYear() &&
-            closed.getMonth() === date.getMonth()
-          );
-        })
-        .reduce((sum, item) => sum + (item.storyPoints || 0), 0);
+      const closedInMonth = items.filter((item) => {
+        const effectiveClosedDate = this._getEffectiveClosedDate(item);
+        if (!effectiveClosedDate) return false;
+        const closed = new Date(effectiveClosedDate);
+        return (
+          closed.getFullYear() === date.getFullYear() &&
+          closed.getMonth() === date.getMonth()
+        );
+      });
+      const points = closedInMonth.reduce(
+        (sum, item) => sum + (item.storyPoints || 0),
+        0,
+      );
 
-      monthsData.push({ month: monthLabel, points });
+      // itemIds includes 0-point completions too: the drawer answers "what did
+      // I complete this month", and hiding pointless items would make counts
+      // look wrong versus ADO.
+      monthsData.push({
+        month: monthLabel,
+        points,
+        itemIds: closedInMonth.map((item) => item.id),
+      });
     }
 
     return monthsData;
@@ -237,9 +272,9 @@ Give 2-4 specific, actionable observations from this data. No generic advice.`;
 
   private _calculateVelocity(
     items: WorkItem[],
-  ): { period: string; points: number }[] {
+  ): { period: string; points: number; itemIds: number[] }[] {
     // Calculate velocity for last 4 weeks
-    const weeks: { period: string; points: number }[] = [];
+    const weeks: { period: string; points: number; itemIds: number[] }[] = [];
     const now = new Date();
 
     for (let i = 3; i >= 0; i--) {
@@ -248,16 +283,22 @@ Give 2-4 specific, actionable observations from this data. No generic advice.`;
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const points = items
-        .filter((item) => {
-          const effectiveClosedDate = this._getEffectiveClosedDate(item);
-          if (!effectiveClosedDate) return false;
-          const closed = new Date(effectiveClosedDate);
-          return closed >= weekStart && closed < weekEnd;
-        })
-        .reduce((sum, item) => sum + (item.storyPoints || 0), 0);
+      const closedInWeek = items.filter((item) => {
+        const effectiveClosedDate = this._getEffectiveClosedDate(item);
+        if (!effectiveClosedDate) return false;
+        const closed = new Date(effectiveClosedDate);
+        return closed >= weekStart && closed < weekEnd;
+      });
+      const points = closedInWeek.reduce(
+        (sum, item) => sum + (item.storyPoints || 0),
+        0,
+      );
 
-      weeks.push({ period: `W${i + 1}`, points });
+      weeks.push({
+        period: `W${i + 1}`,
+        points,
+        itemIds: closedInWeek.map((item) => item.id),
+      });
     }
 
     return weeks;
@@ -310,17 +351,17 @@ Give 2-4 specific, actionable observations from this data. No generic advice.`;
   }
 
   private _getFocusItems(items: WorkItem[]): WorkItem[] {
-    // Get all active items (not completed, not resolved)
-    const RESOLVED_STATES = new Set([
-      "Closed",
-      "Resolved",
-      "Done",
-      "Removed",
-      "Dev Complete",
+    // Get all active items: exclude the configured "completed" workflow
+    // category plus removed/deleted. With default settings this matches the
+    // previous hardcoded list exactly.
+    const resolvedStates = categoryStateSet(getWorkflowCategories(), [
+      "completed",
     ]);
+    resolvedStates.add("removed");
+    resolvedStates.add("deleted");
 
     return items
-      .filter((item) => !RESOLVED_STATES.has(item.state))
+      .filter((item) => !resolvedStates.has(normalizeState(item.state)))
       .sort((a, b) => {
         // Sort by priority first, then by changed date
         const priorityDiff = (a.priority || 999) - (b.priority || 999);
