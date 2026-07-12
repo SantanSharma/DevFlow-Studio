@@ -2,7 +2,7 @@
   "name": "devflow-studio",
   "displayName": "DevFlow Studio",
   "description": "AI-powered Azure DevOps dashboard with smart standup generation and personal journal",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "SantanSharma",
   "license": "MIT",
   "categories": [
