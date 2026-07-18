@@ -3,7 +3,7 @@ import { call } from '../../lib/rpc';
 import { useStore } from '../../state/store';
 import { MultiDropdown } from '../multi-dropdown';
 import {
-    ALL_STATES,
+    buildStateOptions,
     DEFAULT_KANBAN_COLUMNS,
     normalizeState,
     type KanbanColumnConfig,
@@ -25,15 +25,16 @@ export const DashboardSettings: React.FC<Props> = ({ onError }) => {
     const items = useStore((s) => s.items);
     const columns = useStore((s) => s.kanbanColumns);
     const completedStates = useStore((s) => s.completedStates);
+    const customStates = useStore((s) => s.customStates);
     const loadSettings = useStore((s) => s.loadSettings);
     const [customState, setCustomState] = useState('');
+    const [newStatus, setNewStatus] = useState('');
 
-    // Offer every known state plus anything present on the actual items.
-    const availableStates = useMemo(() => {
-        const all = new Set<string>(ALL_STATES);
-        items.forEach((item) => all.add(item.state));
-        return Array.from(all).sort();
-    }, [items]);
+    // Built-in states first, custom states and live item states listed below.
+    const availableStates = useMemo(
+        () => buildStateOptions([...customStates, ...items.map((i) => i.state)]),
+        [items, customStates],
+    );
 
     const persistColumns = async (next: KanbanColumnConfig[]): Promise<void> => {
         try {
@@ -51,6 +52,25 @@ export const DashboardSettings: React.FC<Props> = ({ onError }) => {
         } catch (e) {
             onError(e instanceof Error ? e.message : String(e));
         }
+    };
+
+    const persistCustomStates = async (next: string[]): Promise<void> => {
+        try {
+            await call('settings.set', { key: 'customStates', value: next });
+            await loadSettings();
+        } catch (e) {
+            onError(e instanceof Error ? e.message : String(e));
+        }
+    };
+
+    const addCustomStatus = (): void => {
+        const value = newStatus.trim();
+        if (!value) return;
+        const exists = availableStates.some((s) => normalizeState(s) === normalizeState(value));
+        if (!exists) {
+            void persistCustomStates([...customStates, value]);
+        }
+        setNewStatus('');
     };
 
     const updateColumn = (idx: number, patch: Partial<KanbanColumnConfig>): void => {
@@ -96,7 +116,51 @@ export const DashboardSettings: React.FC<Props> = ({ onError }) => {
 
     return (
         <>
-            <h3>Kanban columns</h3>
+            <h3>Custom statuses</h3>
+            <p className="help-text">
+                Extra work item states beyond the built-in list. Added statuses appear in
+                every status dropdown: the work items Status filter, the Kanban column
+                editors below, the focus board column filters, and the completed states
+                picker. Statuses already present on fetched items are offered automatically.
+            </p>
+            <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                    type="text"
+                    placeholder="Add status (e.g. In Deployment)"
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomStatus();
+                        }
+                    }}
+                    style={{ width: 220 }}
+                />
+                <button type="button" disabled={!newStatus.trim()} onClick={addCustomStatus}>
+                    Add
+                </button>
+            </div>
+            <div className="state-chips">
+                {customStates.length === 0 && (
+                    <span className="help-text">No custom statuses configured.</span>
+                )}
+                {customStates.map((s) => (
+                    <span key={s} className="state-chip">
+                        {s}
+                        <button
+                            type="button"
+                            className="state-chip-remove"
+                            title={`Remove ${s}`}
+                            onClick={() => void persistCustomStates(customStates.filter((x) => x !== s))}
+                        >
+                            ✕
+                        </button>
+                    </span>
+                ))}
+            </div>
+
+            <h3 style={{ marginTop: 24 }}>Kanban columns</h3>
             <p className="help-text">
                 Columns used by the dashboard focus board and the work items Kanban view.
                 Each column shows items whose state matches one of its mapped states

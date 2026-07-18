@@ -1,12 +1,12 @@
-# DevFlow Studio
+﻿# DevFlow Studio
 
-![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)
 ![VS Code](https://img.shields.io/badge/VS%20Code-^1.95.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 I built DevFlow Studio because I was tired of switching between VS Code and Azure DevOps a hundred times a day. Now I can see my work items, add notes, and generate standups right from my editor.
 
-## 🚀 What Makes It Useful?
+## ðŸš€ What Makes It Useful?
 
 **No More Context Switching**  
 Stop jumping between VS Code and your browser just to check work items. Everything you need is right here.
@@ -23,29 +23,29 @@ View your work items however you like. Grid for lists, Kanban for boards. Filter
 **Built on MCP**  
 Uses the Model Context Protocol, so you can swap out the backend if you want. It's just standard tooling.
 
-## ✨ Core Features
+## âœ¨ Core Features
 
-### 🎯 **Azure DevOps Dashboard**
+### ðŸŽ¯ **Azure DevOps Dashboard**
 
 See all your assigned work items without leaving VS Code. Toggle between Grid and Kanban views. Filter by sprint, status, or assignee - whatever helps you stay organized.
 
-### 📝 **Personal Notes**
+### ðŸ“ **Personal Notes**
 
 Add quick notes to any work item. They stay local on your machine and never get pushed to Azure DevOps. Great for tracking things you're thinking through or debugging clues.
 
-### 🤖 **AI Standup Generator**
+### ðŸ¤– **AI Standup Generator**
 
 Click a button, get a standup report. Claude reads your work items and notes, then writes up what you did, what you're doing, and any blockers. Saves a ton of time.
 
-### 📊 **"My Day" Widget**
+### ðŸ“Š **"My Day" Widget**
 
 Quick glance at what's on your plate today. Active items, upcoming tasks, blockers - all in one spot.
 
-### ⚙️ **MCP Architecture**
+### âš™ï¸ **MCP Architecture**
 
 Built on Model Context Protocol, so it works with any MCP server that talks to Azure DevOps. Easy to extend or customize if you need to.
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### What You'll Need
 
@@ -131,19 +131,19 @@ The extension needs to know a few things about your ADO setup. Pick whichever wa
 
 | Setting               | Required       | What It's For                           | Example                     |
 | --------------------- | -------------- | --------------------------------------- | --------------------------- |
-| `adoProject`          | ✅ Yes         | Your Azure DevOps project name          | `"MyTeamProject"`           |
-| `meEmail`             | ✅ Yes         | Your email in ADO                       | `"you@company.com"`         |
-| `meDisplayName`       | ⚠️ Recommended | Your display name in ADO                | `"John Doe"`                |
-| `savedQueryId`        | ❌ Optional    | Use a saved query instead of "my items" | `"My Queries/SS-WorkItems"` |
-| `extraAssigneeFields` | ❌ Optional    | Custom assignee fields (if you use any) | `["Custom.Dev"]`            |
+| `adoProject`          | âœ… Yes         | Your Azure DevOps project name          | `"MyTeamProject"`           |
+| `meEmail`             | âœ… Yes         | Your email in ADO                       | `"you@company.com"`         |
+| `meDisplayName`       | âš ï¸ Recommended | Your display name in ADO                | `"John Doe"`                |
+| `savedQueryId`        | âŒ Optional    | Use a saved query instead of "my items" | `"My Queries/SS-WorkItems"` |
+| `extraAssigneeFields` | âŒ Optional    | Custom assignee fields (if you use any) | `["Custom.Dev"]`            |
 
 #### Step 3: Verify Configuration
 
 1. Open the dashboard: **Ctrl+Alt+A** (or **Cmd+Alt+A** on Mac)
 2. If everything's set up right, you'll see:
-   - ✅ Onboarding wizard (first time only)
-   - ✅ Your work items in the Grid view
-   - ✅ "My Day" widget with your active stuff
+   - âœ… Onboarding wizard (first time only)
+   - âœ… Your work items in the Grid view
+   - âœ… "My Day" widget with your active stuff
 
 **If Something's Not Working:**
 
@@ -154,7 +154,7 @@ The extension needs to know a few things about your ADO setup. Pick whichever wa
   - Run `az login` to authenticate Azure CLI
   - Verify your org name in `.vscode/mcp.json`
 - **Want to see onboarding again?**
-  - **Ctrl+Shift+P** → "DevFlow Studio: Reset Onboarding"
+  - **Ctrl+Shift+P** â†’ "DevFlow Studio: Reset Onboarding"
 
 #### Step 4: You're Ready to Go
 
@@ -162,35 +162,35 @@ Here's what you can do:
 
 - **Open Dashboard**: `Ctrl+Alt+A` or `Cmd+Alt+A`
 - **Add Notes**: Click any work item, go to "Notes" tab
-- **Generate Standup**: "Standup" tab → "Generate Standup" button
+- **Generate Standup**: "Standup" tab â†’ "Generate Standup" button
 - **Switch Views**: Toggle between Grid and Kanban
 - **Filter Stuff**: Use the filter bar to find what you need
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 Found a bug or have an idea? Feel free to fork the repo, make your changes, and send a PR. Contributions are always welcome!
 
-## 📄 License
+## ðŸ“„ License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## 👤 Author
+## ðŸ‘¤ Author
 
 **Santan Sharma**
 
 - GitHub: [@SantanSharma](https://github.com/SantanSharma)
 - Email: [pingsantan@gmail.com](mailto:pingsantan@gmail.com)
 
-## ⭐ Support This Project
+## â­ Support This Project
 
 If you find this useful:
 
-- ⭐ Give it a star on [GitHub](https://github.com/SantanSharma/DevFlow-Studio)
-- 📝 Leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SantanSharma.devflow-studio)
-- 🐛 Report bugs or suggest features on [GitHub Issues](https://github.com/SantanSharma/DevFlow-Studio/issues)
+- â­ Give it a star on [GitHub](https://github.com/SantanSharma/DevFlow-Studio)
+- ðŸ“ Leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SantanSharma.devflow-studio)
+- ðŸ› Report bugs or suggest features on [GitHub Issues](https://github.com/SantanSharma/DevFlow-Studio/issues)
 
 ---
 
-<p align="center">Made with ❤️ by Santan Sharma</p>
+<p align="center">Made with â¤ï¸ by Santan Sharma</p>

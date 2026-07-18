@@ -2,7 +2,7 @@
   "name": "devflow-studio",
   "displayName": "DevFlow Studio",
   "description": "AI-powered Azure DevOps dashboard with smart standup generation and personal journal",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "SantanSharma",
   "license": "MIT",
   "categories": [
@@ -212,6 +212,13 @@
             "Ready for Test"
           ],
           "description": "Work item states treated as completed for dashboard metrics (story points chart, velocity, summaries). Case-insensitive. For states that never receive a Closed Date in Azure DevOps, the completion date is resolved from the work item's revision history."
+        },
+        "devflowStudio.customStates": {
+          "type": "array",
+          "scope": "application",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Additional work item states beyond the built-in list. These appear in every status dropdown (work items filter bar, Kanban column editors, focus board column filters, completed states picker) so custom ADO process states can be selected even before any fetched item carries them."
         },
         "devflowStudio.storyPointsFields": {
           "type": "array",

@@ -77,7 +77,10 @@ export const PersonalDashboard: React.FC<{ allItems: WorkItem[] }> = ({ allItems
                 {/* Row 1: Immediate Daily Focus (full width Kanban) */}
                 <div className="dashboard-row row-1">
                     <div className="widget widget-focus-list">
-                        <TodaysFocusList items={metrics?.focusItems || []} />
+                        {/* Full assigned set (same pool as 'All Assigned'): the
+                            per-column state filters decide what shows, so completed
+                            items are reachable too when a column selects their state. */}
+                        <TodaysFocusList items={allItems} />
                     </div>
                 </div>
 
