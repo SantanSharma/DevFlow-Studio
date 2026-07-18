@@ -66,6 +66,27 @@ export function normalizeState(state: string): string {
 }
 
 /**
+ * Single source for status dropdown options across the app: built-in states
+ * first (alphabetical), then extras (user-configured custom states and states
+ * present on live items) appended below, deduplicated case-insensitively.
+ */
+export function buildStateOptions(extras: Iterable<string>): string[] {
+    const base = [...ALL_STATES].sort();
+    const seen = new Set(base.map(normalizeState));
+    const extra: string[] = [];
+    for (const s of extras) {
+        const norm = normalizeState(s);
+        if (!norm || seen.has(norm)) {
+            continue;
+        }
+        seen.add(norm);
+        extra.push(s.trim());
+    }
+    extra.sort();
+    return [...base, ...extra];
+}
+
+/**
  * Maps a state to a category key. Case-insensitive; categories evaluated in
  * array order, first match wins; unmatched states map to "other".
  */

@@ -89,6 +89,8 @@ interface StoreState {
   workflowCategories: WorkflowCategory[];
   kanbanColumns: KanbanColumnConfig[];
   completedStates: string[];
+  // User-defined extra states offered in every status dropdown.
+  customStates: string[];
   // Universal work items drawer (list + detail). Deliberately separate from
   // selectedId, which drives the legacy standalone DetailDrawer.
   workItemsDrawer?: WorkItemsDrawerState;
@@ -129,6 +131,7 @@ export const useStore = create<StoreState>((set, get) => ({
   workflowCategories: DEFAULT_WORKFLOW_CATEGORIES,
   kanbanColumns: DEFAULT_KANBAN_COLUMNS,
   completedStates: [],
+  customStates: [],
   setView: (v) => set({ view: v }),
   setBoardMode: (m) => set({ boardMode: m }),
   setSearch: (search) => set({ filters: { ...get().filters, search } }),
@@ -181,6 +184,7 @@ export const useStore = create<StoreState>((set, get) => ({
         workflowCategories?: WorkflowCategory[];
         kanbanColumns?: KanbanColumnConfig[];
         completedStates?: string[];
+        customStates?: string[];
       }>("settings.get");
       set({
         orgUrl: s?.orgUrl,
@@ -194,6 +198,7 @@ export const useStore = create<StoreState>((set, get) => ({
             ? s.kanbanColumns
             : DEFAULT_KANBAN_COLUMNS,
         completedStates: s?.completedStates ?? [],
+        customStates: s?.customStates ?? [],
       });
     } catch {
       /* ignore */

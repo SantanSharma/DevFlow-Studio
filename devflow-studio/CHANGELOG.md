@@ -2,6 +2,18 @@
 
 All notable changes to the "DevFlow Studio" extension will be documented in this file.
 
+## [0.1.5] - 2026-07-18
+
+### Added
+
+- **Custom statuses** - New `devflowStudio.customStates` setting with an editor in Settings → Dashboard Configuration. Added statuses appear in every status dropdown across the app (work items Status filter, Kanban column editors, focus board column filters, completed states picker) immediately after add/remove
+- **Shared status list** - All status dropdowns now use one shared option builder: built-in states listed first, custom and live item states listed below
+
+### Changed
+
+- **Kanban shows the full assigned set** - The work items Kanban view now operates on all fetched items (same pool as "All Assigned"), scoped only by the filter bar; clearing the Status filter shows every item. Grid view keeps the sidebar view scoping
+- **Focus board pool** - Today's Focus List is now fed all assigned items instead of the active-only subset, and a column with no states selected shows all items (matching its "All states" label) instead of going empty
+
 ## [0.1.3] - 2026-07-12
 
 ### Added

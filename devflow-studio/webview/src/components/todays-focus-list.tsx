@@ -3,12 +3,13 @@ import { WorkItem, useStore } from '../state/store';
 import { InfoTooltip } from './info-tooltip';
 import { WorkItemCard } from './work-item-card';
 import { MultiDropdown } from './multi-dropdown';
-import { ALL_STATES, normalizeState } from '../lib/workflow-categories';
+import { buildStateOptions, normalizeState } from '../lib/workflow-categories';
 import { useMetricClick, metricKeyHandler } from '../lib/use-metric-click';
 
 export const TodaysFocusList: React.FC<{ items: WorkItem[] }> = ({ items }) => {
     const select = useStore((s) => s.select);
     const columnConfig = useStore((s) => s.kanbanColumns);
+    const customStates = useStore((s) => s.customStates);
     const openMetric = useMetricClick();
 
     // Session-only per-column overrides of the configured states; re-derived
@@ -20,19 +21,21 @@ export const TodaysFocusList: React.FC<{ items: WorkItem[] }> = ({ items }) => {
         setColumnStates(columnConfig.map((col) => new Set(col.states)));
     }, [columnConfig]);
 
-    // Offer every known state plus anything present on the actual items.
-    const availableStates = useMemo(() => {
-        const all = new Set<string>(ALL_STATES);
-        items.forEach((item) => all.add(item.state));
-        return Array.from(all).sort();
-    }, [items]);
+    // Built-in states first, then configured custom states and live item
+    // states below, so newly configured statuses are selectable immediately.
+    const availableStates = useMemo(
+        () => buildStateOptions([...customStates, ...items.map((i) => i.state)]),
+        [items, customStates],
+    );
 
     const columns = useMemo(
         () => columnConfig.map((col, idx) => {
             const states = columnStates[idx] ?? new Set(col.states);
             const normalized = new Set(Array.from(states).map(normalizeState));
+            // Empty selection means "All states" (matches the dropdown summary):
+            // show every item instead of hiding the column's contents.
             const colItems = items
-                .filter((item) => normalized.has(normalizeState(item.state)))
+                .filter((item) => normalized.size === 0 || normalized.has(normalizeState(item.state)))
                 .sort((a, b) => (a.priority || 999) - (b.priority || 999));
             return { title: col.title, states, items: colItems };
         }),

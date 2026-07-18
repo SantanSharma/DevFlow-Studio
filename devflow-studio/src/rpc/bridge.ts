@@ -151,6 +151,7 @@ export class RpcBridge {
           completedStates:
             cfg.get<string[]>("completedStates") ??
             Array.from(getCompletedStates()),
+          customStates: cfg.get<string[]>("customStates") ?? [],
         };
       }
       case "settings.set":

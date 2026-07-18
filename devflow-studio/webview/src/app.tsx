@@ -54,6 +54,15 @@ export const App: React.FC = () => {
         [items, view, filters, notes, worked],
     );
 
+    // Kanban always works over the full assigned set (same pool as the
+    // 'All Assigned' view), scoped only by the filter bar. Clearing the
+    // Status filter therefore shows every fetched item; the sidebar view
+    // scoping applies to the grid only.
+    const kanbanItems = useMemo(
+        () => applyFilters(items, filters),
+        [items, filters],
+    );
+
     // One computation point for the sidebar counts and their drawer contents;
     // deliberately excludes `filters` (counts are pre-filter by design) and
     // `view`. workflowCategories is a dependency because applyView derives its
@@ -175,7 +184,9 @@ export const App: React.FC = () => {
                         {items.length > 0 && <PersonalDashboard allItems={items} />}
                     </>
                 )}
-                {tab === 'work-items' && <Dashboard items={filtered} allItems={items} />}
+                {tab === 'work-items' && (
+                    <Dashboard items={boardMode === 'kanban' ? kanbanItems : filtered} allItems={items} />
+                )}
                 {tab === 'standup' && <StandupPanel />}
                 {tab === 'settings' && <Settings />}
             </main>

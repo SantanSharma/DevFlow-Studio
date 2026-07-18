@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, type WorkItem } from '../state/store';
+import { buildStateOptions } from '../lib/workflow-categories';
 
 interface Props {
     items: WorkItem[];
@@ -78,6 +79,7 @@ export const FilterBar: React.FC<Props> = ({ items }) => {
     const setIteration = useStore((s) => s.setIteration);
     const setTypes = useStore((s) => s.setTypes);
     const setStates = useStore((s) => s.setStates);
+    const customStates = useStore((s) => s.customStates);
 
     const { types, states, iterations } = useMemo(() => {
         const ts = new Set<string>([
@@ -90,42 +92,21 @@ export const FilterBar: React.FC<Props> = ({ items }) => {
             'Support Request',
             'Issue',
         ]);
-        const ss = new Set<string>([
-            'New',
-            'Proposed',
-            'To Do',
-            'Triage',
-            'Investigation',
-            'Ready for Dev',
-            'Active',
-            'Committed',
-            'In Progress',
-            'In Development',
-            'Code Review',
-            'Ready for Test',
-            'In Test',
-            'Blocked',
-            'On Hold',
-            'Redbin/Blocked',
-            'Resolved',
-            'Done',
-            'Closed',
-            'Removed',
-        ]);
         const it = new Set<string>();
         for (const i of items) {
             ts.add(i.type);
-            ss.add(i.state);
             if (i.iterationPath) {
                 it.add(i.iterationPath);
             }
         }
         return {
             types: Array.from(ts).sort(),
-            states: Array.from(ss).sort(),
+            // Shared status list: built-in states first, then configured
+            // custom states and live item states appended below.
+            states: buildStateOptions([...customStates, ...items.map((i) => i.state)]),
             iterations: Array.from(it).sort(),
         };
-    }, [items]);
+    }, [items, customStates]);
 
     const clearAll = filters.types.size > 0 || filters.states.size > 0 || filters.iteration;
 
